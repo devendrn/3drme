@@ -6,10 +6,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 void Scene::addObject() {
-  sceneTree[0] = {0, 0, glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
-  sceneTree[1] = {0, 0, glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
-  sceneTree[2] = {0, 0, glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
-  sceneTree[3] = {0, 0, glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
+  // TEST!!
+  sceneTree[0] = {1, 0, glm::vec3(2.0, 0.0, 0.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
+  sceneTree[1] = {0, 0, glm::vec3(0.0, 0.0, 2.0), glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0), glm::vec4(1.0)};
+  sceneTree[2] = {1, 0, glm::vec3(0.0, -3.0, 0.0), glm::vec3(0.0), glm::vec3(1.5), glm::vec4(1.0)};
+  sceneTree[3] = {0, 0, glm::vec3(-3.0, 0.0, 0.0), glm::vec3(0.0, -0.7, 0.0), glm::vec3(0.8), glm::vec4(1.0)};
 }
 
 Scene::Scene() {
@@ -33,15 +34,10 @@ void Scene::updateObjectUbo() {
   std::vector<ObjectUboData> objectData;
 
   for (const auto& pair : sceneTree) {
+    const Object& v = pair.second;
     ObjectUboData data;
-    glm::mat4 model = glm::mat4(1.0f);
-    // model = glm::scale(model, pair.second.scale);
-    //  model = glm::rotate(model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-    //  model = glm::rotate(model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-    //  model = glm::rotate(model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-    model = glm::translate(model, pair.second.position);
-    data.model = model;
-    // data.matId = pair.second.matId;
+    data.transformation = constructTransformationMat(v.position, v.scale, v.rotation);
+    data.typeMatId = glm::ivec4(v.type, v.matId, 0, 0);
     objectData.push_back(data);
   }
 
@@ -50,12 +46,12 @@ void Scene::updateObjectUbo() {
   // member offset size
   // int    0      4
   // -      -      12 <- padding (required to keep offsets be multiple of 16
-  // mat4   16     64
+  // obj    16     -
   unsigned long objectsNum = objectData.size();
   glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(int), &objectsNum);
   glBufferSubData(GL_UNIFORM_BUFFER, 16, static_cast<long>(objectsNum * sizeof(ObjectUboData)), objectData.data());
 
-  glBindBufferRange(GL_UNIFORM_BUFFER, 0, objectUbo, 0, static_cast<long>(16 + (objectsNum * sizeof(ObjectUboData)))); // Important: Bind with correct size
+  glBindBufferRange(GL_UNIFORM_BUFFER, 0, objectUbo, 0, static_cast<long>(16 + (objectsNum * sizeof(ObjectUboData))));
 
   glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -74,3 +70,15 @@ void Scene::updateObjectUbo() {
 */
 
 void Scene::modifyObjectPosition(unsigned int id, glm::vec3 position) { sceneTree[id].position = position; }
+
+glm::mat4 Scene::constructTransformationMat(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation) {
+  glm::vec3 s = glm::sin(rotation);
+  glm::vec3 c = glm::cos(rotation);
+
+  // TODO: Use quaternion?
+  return glm::mat4(                                                                    // Packing in this manner to save space and reduce calculations in shader
+      c.y * c.z, s.x * s.y * c.z - c.x * s.z, c.x * s.y * c.z + s.x * s.z, position.x, //
+      c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z, position.y, //
+      -s.y, s.x * c.y, c.x * c.y, position.z,                                          //
+      scale.x, scale.y, scale.z, 1.0);                                                 //
+}

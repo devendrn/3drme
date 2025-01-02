@@ -13,40 +13,62 @@ uniform float uTime;
 // TODO: extend object types, properties
 
 struct ObjectUboData {
-//  int type;
-//  int matId;
-  mat4 model;
+  mat4 transformation;
+  ivec4 typeMatId;
 };
 
 layout(std140, binding = 0) uniform uObjectBlock {
-    int objectsCount;
-    ObjectUboData objects[MAX_OBJECTS];
+  int objectsCount;
+  ObjectUboData objects[MAX_OBJECTS];
 };
 
-float sdSphere(vec3 p) {
+// SDF functions: https://iquilezles.org/articles/distfunctions/
+
+float sdfSphere(vec3 p) {
   return length(p)-1.0;
 }
 
-// TODO: use vectors for translation, scale, and mat3 for rotation
-float global_sdf(vec3 p) {
+float sdfBox(vec3 p) {
+  vec3 q = abs(p) - 1.0;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+vec3 applyTransform(vec3 p, mat4 t) {
+  p *= vec3(t[3][0], t[3][1], t[3][2]);
+  p += vec3(t[0][3], t[1][3], t[2][3]);
+  p = mat3(t) * p;
+  return p;
+}
+
+float sceneSdf(vec3 p) {
   float f = 1e10;
   for (int i = 0; i < objectsCount; i++) {
-    vec3 pn = (objects[i].model * vec4(p, 1.0)).xyz;
-    f = min(f, sdSphere(pn));
+    // Applying transformation here is a bad idea, I know
+    vec3 q = applyTransform(p, objects[i].transformation);
+    float dist;
+    switch(objects[i].typeMatId.x) {
+      case 0:
+        dist = sdfBox(q); break;
+      case 1:
+        dist = sdfSphere(q); break;
+      default:
+        dist = 1e10;
+    }
+    f = min(f, dist);
   }
   return f;
 }
 
-vec3 calc_normal(vec3 p, float d0) {
+vec3 calcNormal(vec3 p, float d0) {
   const vec2 o = vec2(0.001, 0.0);
-  float dx = d0 - global_sdf(p + o.xyy);
-  float dy = d0 - global_sdf(p + o.yxy);
-  float dz = d0 - global_sdf(p + o.yyx);
+  float dx = d0 - sceneSdf(p + o.xyy);
+  float dy = d0 - sceneSdf(p + o.yxy);
+  float dz = d0 - sceneSdf(p + o.yyx);
   return normalize(vec3(dx, dy, dz));
 }
 
 // TODO: use enhanced sphere tracing
-vec3 ray_march(vec3 ro, vec3 rd) {
+vec3 rayMarch(vec3 ro, vec3 rd) {
   const int STEPS = 32;
   const float HIT_THRESHOLD = 0.01;
 
@@ -59,10 +81,10 @@ vec3 ray_march(vec3 ro, vec3 rd) {
 
   for (int i=0; i < STEPS; i++) {
     vec3 pos = ro + rd * dist;
-    float df = global_sdf(pos);
+    float df = sceneSdf(pos);
 
     if (df < HIT_THRESHOLD) {
-      vec3 nrm = calc_normal(pos, df);
+      vec3 nrm = calcNormal(pos, df);
       col = 0.5*abs(nrm);
       col += 0.5*fract(pos);
       col *= 0.5 + 0.5*dot(normalize(vec3(-1.0,-1.0,0.0)), nrm);
@@ -91,7 +113,7 @@ vec3 render(vec2 uv) {
   vec3 ray_org = ray_backplane;
   vec3 ray_dir = normalize(ray_frontplane-ray_backplane);
 
-  vec3 c = ray_march(ray_org, ray_dir);
+  vec3 c = rayMarch(ray_org, ray_dir);
   return c;
 }
 

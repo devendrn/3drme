@@ -30,9 +30,8 @@ struct MaterialUboData {
 };
 
 struct ObjectUboData {
-  // int type;
-  // int matId;
-  glm::mat4 model;
+  glm::mat4 transformation; // not a composite matrix
+  glm::ivec4 typeMatId;     // z,w are for padding
 };
 
 /*
@@ -59,6 +58,9 @@ public:
   void deleteObject();
 
   void updateObjectUbo();
+
+private:
+  glm::mat4 constructTransformationMat(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
 };
 
 #endif
