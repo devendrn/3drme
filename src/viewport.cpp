@@ -180,8 +180,9 @@ void Viewport::bindKeys() {
   keyBinds[GLFW_KEY_KP_7] = [&]() { camera.setViewpoint(0, 1); };
   keyBinds[GLFW_KEY_KP_9] = [&]() { camera.setViewpoint(0, -1); };
   keyBinds[GLFW_KEY_KP_5] = [&]() { camera.toggleOrthoView(); };
+  keyBinds[GLFW_KEY_R] = [&]() { shader.reloadFragment(); }; // TODO: use ctrl mod
 
-  // TODO - might have to use mods in future for more combinations
+  // TODO: might have to use mods in future for more combinations
   glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
       if (keyBinds.count(key)) {
@@ -191,6 +192,7 @@ void Viewport::bindKeys() {
   });
 }
 
+// TODO: must only do when cursor is inside window
 void Viewport::inputScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
   Viewport* vp = reinterpret_cast<Viewport*>(glfwGetWindowUserPointer(window));
 

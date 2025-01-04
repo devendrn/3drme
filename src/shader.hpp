@@ -16,6 +16,8 @@ public:
 
   void use() const;
 
+  void reloadFragment();
+
   void setUniformInt(const std::string& name, int value) const;
 
   void setUniformFloat(const std::string& name, float value) const;
@@ -28,11 +30,15 @@ public:
   void setUniformMat4(const std::string& name, const glm::mat4& value) const;
 
 private:
+  std::string name;
+  unsigned int fragmentShader;
+  unsigned int vertexShader;
+
   std::string readFile(const std::string& filePath);
 
-  unsigned int compileShader(GLenum type, const std::string& source);
+  void loadShader(GLenum type);
 
-  void attachLinkShaders(unsigned int vertexShader, unsigned int fragmentShader);
+  void attachLinkShaders();
 };
 
 #endif

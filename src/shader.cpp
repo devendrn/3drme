@@ -4,18 +4,24 @@
 #include <iostream>
 #include <sstream>
 
+Shader::Shader(const std::string& name) : name(name) {
+  vertexShader = glCreateShader(GL_VERTEX_SHADER);
+  loadShader(GL_VERTEX_SHADER);
 
-Shader::Shader(const std::string& name) {
-  std::string vertexShaderSrc = readFile("shaders/" + name + ".vsh");
-  std::string fragmentShaderSrc = readFile("shaders/" + name + ".fsh");
+  fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+  loadShader(GL_FRAGMENT_SHADER);
 
-  unsigned int vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSrc);
-  unsigned int fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
-
-  attachLinkShaders(vertexShader, fragmentShader);
+  ID = glCreateProgram();
+  attachLinkShaders();
 }
 
 void Shader::use() const { glUseProgram(ID); }
+
+void Shader::reloadFragment() {
+  std::cout << "Reloading fragment shader\n";
+  loadShader(GL_FRAGMENT_SHADER);
+  attachLinkShaders();
+}
 
 void Shader::setUniformInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(ID, name.c_str()), value); }
 void Shader::setUniformFloat(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(ID, name.c_str()), value); }
@@ -38,10 +44,13 @@ std::string Shader::readFile(const std::string& filePath) {
   return buffer.str();
 }
 
-unsigned int Shader::compileShader(GLenum type, const std::string& source) {
-  const char* src = source.c_str();
+void Shader::loadShader(GLenum type) {
+  bool isVertex = type == GL_VERTEX_SHADER;
 
-  unsigned int shader = glCreateShader(type);
+  unsigned int& shader = (isVertex) ? vertexShader : fragmentShader;
+
+  std::string source = readFile("shaders/" + name + (isVertex ? ".vsh" : ".fsh"));
+  const char* src = source.c_str();
   glShaderSource(shader, 1, &src, nullptr);
   glCompileShader(shader);
 
@@ -50,14 +59,11 @@ unsigned int Shader::compileShader(GLenum type, const std::string& source) {
   glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
   if (success == 0) {
     glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-    std::cerr << "ERROR::SHADER::" << (type == GL_VERTEX_SHADER ? "VERTEX" : "FRAGMENT") << "::COMPILATION_FAILED\n" << infoLog << std::endl;
+    std::cerr << "ERROR::SHADER::" << (isVertex ? "VERTEX" : "FRAGMENT") << "::COMPILATION_FAILED\n" << infoLog << std::endl;
   }
-
-  return shader;
 }
 
-void Shader::attachLinkShaders(unsigned int vertexShader, unsigned int fragmentShader) {
-  ID = glCreateProgram();
+void Shader::attachLinkShaders() {
   glAttachShader(ID, vertexShader);
   glAttachShader(ID, fragmentShader);
   glLinkProgram(ID);
