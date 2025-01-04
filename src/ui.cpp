@@ -1,4 +1,5 @@
 #include "ui.hpp"
+
 #include "viewport.hpp"
 
 void processInput(GLFWwindow* window) {
@@ -56,6 +57,8 @@ void buildUi(GLFWwindow* window, Viewport* viewport) {
     {
       const ImVec2 p = ImGui::GetCursorScreenPos();
       const ImVec2 wsize = ImGui::GetContentRegionAvail();
+
+      viewport->hovered = ImGui::IsWindowHovered();
 
       viewport->resize(static_cast<int>(wsize.x), static_cast<int>(wsize.y)); // only resizes if wsize changed
       ImGui::Image((ImTextureID)viewport->taaFramebuffer.textureID, wsize, ImVec2(0, 1), ImVec2(1, 0));

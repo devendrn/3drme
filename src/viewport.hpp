@@ -43,6 +43,8 @@ public:
 
   GLFWwindow* window;
 
+  bool hovered;
+
   int width, height;
   int renderWidth, renderHeight;
   float downscaleFactor = 0.2f;
