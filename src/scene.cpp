@@ -77,8 +77,8 @@ glm::mat4 Scene::constructTransformationMat(glm::vec3 position, glm::vec3 scale,
 
   // TODO: Use quaternion?
   return glm::mat4(                                                                    // Packing in this manner to save space and reduce calculations in shader
-      c.y * c.z, s.x * s.y * c.z - c.x * s.z, c.x * s.y * c.z + s.x * s.z, position.x, //
-      c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z, position.y, //
-      -s.y, s.x * c.y, c.x * c.y, position.z,                                          //
-      scale.x, scale.y, scale.z, 1.0);                                                 //
+      c.y * c.z, s.x * s.y * c.z - c.x * s.z, c.x * s.y * c.z + s.x * s.z, -position.x, //
+      c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z, -position.y, //
+      -s.y, s.x * c.y, c.x * c.y, -position.z,                                          //
+      1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z, 1.0);                            //
 }

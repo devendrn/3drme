@@ -26,7 +26,7 @@ GLFWwindow* initializeWindow() {
 
   glfwMakeContextCurrent(window);
 
-  glfwSwapInterval(0); // disable vsync
+  //glfwSwapInterval(0); // disable vsync
 
   if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == 0) {
     std::cerr << "Failed to initialize GLAD" << std::endl;

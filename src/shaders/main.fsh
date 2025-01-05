@@ -33,30 +33,55 @@ float sdfBox(vec3 p) {
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
+float sdfShape(vec3 p, int type) {
+  switch(type) {
+    case 0:
+      return sdfBox(p);
+    case 1:
+      return sdfSphere(p);
+    default:
+      return 1e10;
+  }
+}
+
+struct Surface {
+  float dist;
+  vec3 color;
+};
+
+Surface minSurf(Surface a, Surface b) {
+  return (a.dist < b.dist) ? a : b;
+}
+
+// TODO: Find a better place to do transformations
+
 vec3 applyTransform(vec3 p, mat4 t) {
-  p *= vec3(t[3][0], t[3][1], t[3][2]);
   p += vec3(t[0][3], t[1][3], t[2][3]);
   p = mat3(t) * p;
+  p *= vec3(t[3][0], t[3][1], t[3][2]);
   return p;
 }
 
 float sceneSdf(vec3 p) {
   float f = 1e10;
   for (int i = 0; i < objectsCount; i++) {
-    // Applying transformation here is a bad idea, I know
-    vec3 q = applyTransform(p, objects[i].transformation);
-    float dist;
-    switch(objects[i].typeMatId.x) {
-      case 0:
-        dist = sdfBox(q); break;
-      case 1:
-        dist = sdfSphere(q); break;
-      default:
-        dist = 1e10;
-    }
+    vec3 q = applyTransform(p, objects[i].transformation); // This is expensive
+    float dist = sdfShape(q, objects[i].typeMatId.x);
     f = min(f, dist);
   }
   return f;
+}
+
+Surface sceneSdfSurf(vec3 p)  {
+  Surface s = Surface(1e10, vec3(0.0));
+  for (int i = 0; i < objectsCount; i++) {
+    ObjectUboData obj = objects[i];
+    vec3 q = applyTransform(p, obj.transformation); // This is expensive
+    float dist = sdfShape(q, obj.typeMatId.x);
+    vec3 col = obj.typeMatId.x > 0 ? vec3(1.0, 0.0, 0.0) : vec3(1.0); // TODO: Implement materials
+    s = minSurf(s, Surface(dist, col));
+  }
+  return s;
 }
 
 vec3 calcNormal(vec3 p, float d0) {
@@ -81,18 +106,17 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
   for (int i=0; i < STEPS; i++) {
     vec3 pos = ro + rd * dist;
-    float df = sceneSdf(pos);
+    Surface s = sceneSdfSurf(pos);
 
-    if (df < HIT_THRESHOLD) {
-      vec3 nrm = calcNormal(pos, df);
-      col = 0.5*abs(nrm);
-      col += 0.5*fract(pos);
-      col *= 0.5 + 0.5*dot(normalize(vec3(-1.0,-1.0,0.0)), nrm);
-    } else if (df > CLIP_END) {
+    if (s.dist < HIT_THRESHOLD) {
+      vec3 nrm = calcNormal(pos, s.dist);
+      col = s.color;
+      col *= max(dot(normalize(vec3(-1.0,-1.0,0.0)), nrm), 0.0);
+    } else if (s.dist > CLIP_END) {
       break;
     }
 
-    dist += df;
+    dist += s.dist;
   }
 
   return col;

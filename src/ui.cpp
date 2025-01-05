@@ -1,10 +1,12 @@
 #include "ui.hpp"
 
+#include <imgui.h>
+
 #include "viewport.hpp"
 
 void processInput(GLFWwindow* window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, 1);
+  // if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+  //   glfwSetWindowShouldClose(window, 1);
 }
 
 void buildUi(GLFWwindow* window, Viewport* viewport) {
@@ -89,10 +91,32 @@ void buildUi(GLFWwindow* window, Viewport* viewport) {
     }
     ImGui::End();
 
-    ImGui::Begin("Object Tree", nullptr, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Object Tree", nullptr);
+    static unsigned int selected = 0;
+    {
+      for (const auto& [key, value] : viewport->scene->sceneTree) {
+        std::string label = "Object " + std::to_string(key);
+        if (ImGui::Selectable(label.c_str(), selected == key))
+          selected = key;
+      }
+    }
     ImGui::End();
 
     ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoScrollbar);
+    {
+      Object& active = viewport->scene->sceneTree[selected];
+
+      // ImGui::InputText("Name", test, 16);
+
+      if (ImGui::CollapsingHeader("Transformation", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::InputFloat3("Position", &active.position.x);
+        ImGui::InputFloat3("Scale", &active.scale.x);
+        ImGui::InputFloat3("Rotation", &active.rotation.x);
+      }
+
+      // if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+      // }
+    }
     ImGui::End();
   }
   ImGui::End();
