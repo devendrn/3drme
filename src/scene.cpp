@@ -1,17 +1,10 @@
 #include "scene.hpp"
 
-#include <map>
+#include <iostream>
+#include <string>
 #include <vector>
 
 #include <glm/gtc/matrix_transform.hpp>
-
-void Scene::addObject() {
-  // TEST!!
-  sceneTree[0] = {1, 0, glm::vec3(2.0, 0.0, 0.0), glm::vec3(0.0), glm::vec3(1.0), glm::vec4(1.0)};
-  sceneTree[1] = {0, 0, glm::vec3(0.0, 0.0, 2.0), glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0), glm::vec4(1.0)};
-  sceneTree[2] = {1, 0, glm::vec3(0.0, -3.0, 0.0), glm::vec3(0.0), glm::vec3(1.5), glm::vec4(1.0)};
-  sceneTree[3] = {0, 0, glm::vec3(-3.0, 0.0, 0.0), glm::vec3(0.0, -0.7, 0.0), glm::vec3(0.8), glm::vec4(1.0)};
-}
 
 Scene::Scene() {
   glGenBuffers(1, &objectUbo);
@@ -30,14 +23,25 @@ Scene::Scene() {
   */
 }
 
+void Scene::addObject(Shape shape) {
+  static unsigned int objId = 0;
+  sceneTree.push_back(Object{objId, "Object " + std::to_string(objId), shape});
+  objId++;
+  std::cout << "[Scene] Added object: type=" << shape << "\n";
+}
+
+void Scene::deleteObject(unsigned int index) {
+  sceneTree.erase(sceneTree.begin() + index);
+  std::cout << "[Scene] Deleted object: id=" << sceneTree[index].id << "\n";
+}
+
 void Scene::updateObjectUbo() {
   std::vector<ObjectUboData> objectData;
 
-  for (const auto& pair : sceneTree) {
-    const Object& v = pair.second;
+  for (const auto& obj : sceneTree) {
     ObjectUboData data;
-    data.transformation = constructTransformationMat(v.position, v.scale, v.rotation);
-    data.typeMatId = glm::ivec4(v.type, v.matId, 0, 0);
+    data.transformation = constructTransformationMat(obj.position, obj.scale, obj.rotation);
+    data.typeMatId = glm::ivec4(obj.type, obj.matId, 0, 0);
     objectData.push_back(data);
   }
 
@@ -76,9 +80,9 @@ glm::mat4 Scene::constructTransformationMat(glm::vec3 position, glm::vec3 scale,
   glm::vec3 c = glm::cos(rotation);
 
   // TODO: Use quaternion?
-  return glm::mat4(                                                                    // Packing in this manner to save space and reduce calculations in shader
+  return glm::mat4(                                                                     // Packing in this manner to save space and reduce calculations in shader
       c.y * c.z, s.x * s.y * c.z - c.x * s.z, c.x * s.y * c.z + s.x * s.z, -position.x, //
       c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z, -position.y, //
       -s.y, s.x * c.y, c.x * c.y, -position.z,                                          //
-      1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z, 1.0);                            //
+      1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z, 1.0);                             //
 }

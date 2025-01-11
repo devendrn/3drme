@@ -58,12 +58,11 @@ int main() {
   initializeImGui(window);
 
   auto scene = Scene();
-  scene.addObject();
 
   Viewport viewport(window, &scene);
 
   while (glfwWindowShouldClose(window) == 0) {
-    buildUi(window, &viewport);
+    buildUi(window, &viewport, &scene);
 
     viewport.render();
     ImGui::Render();

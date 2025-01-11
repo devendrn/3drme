@@ -2,17 +2,21 @@
 #define SCENE_H
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include <glad/glad.h>
 
 #include <glm/glm.hpp>
 
 struct Object {
+  unsigned int id;
+  std::string name;
   int type;
-  int matId;
-  glm::vec3 position;
-  glm::vec3 rotation;
-  glm::vec3 scale;
+  int matId = 0;
+  glm::vec3 position = glm::vec3(0.0f);
+  glm::vec3 rotation = glm::vec3(0.0f);
+  glm::vec3 scale = glm::vec3(1.0f);
   glm::vec4 extra;
 };
 
@@ -41,9 +45,14 @@ struct LightUBO {
 };
 */
 
+enum Shape {
+  BOX = 0,
+  SPHERE = 1,
+};
+
 class Scene {
 public:
-  std::map<unsigned int, Object> sceneTree;   // id, obj
+  std::vector<Object> sceneTree;
   std::map<unsigned int, Material> materials; // id, mat
 
   GLuint objectUbo;
@@ -51,11 +60,11 @@ public:
 
   Scene();
 
-  void addObject();
+  void addObject(Shape shape);
 
   void modifyObjectPosition(unsigned int id, glm::vec3 position);
 
-  void deleteObject();
+  void deleteObject(unsigned int index);
 
   void updateObjectUbo();
 

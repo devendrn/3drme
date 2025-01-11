@@ -10,6 +10,6 @@
 
 #include "viewport.hpp"
 
-void buildUi(GLFWwindow* window, Viewport* viewport);
+void buildUi(GLFWwindow* window, Viewport* viewport, Scene *scene);
 
 #endif

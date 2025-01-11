@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "scene.hpp"
 #include "viewport.hpp"
 
 void processInput(GLFWwindow* window) {
@@ -9,7 +10,7 @@ void processInput(GLFWwindow* window) {
   //   glfwSetWindowShouldClose(window, 1);
 }
 
-void buildUi(GLFWwindow* window, Viewport* viewport) {
+void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -53,10 +54,22 @@ void buildUi(GLFWwindow* window, Viewport* viewport) {
       ImGui::EndMenuBar();
     }
 
+    ImGui::ShowDemoWindow();
+
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
     ImGui::PopStyleVar(1);
     {
+      if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("Add")) {
+          if (ImGui::MenuItem("Box"))
+            scene->addObject(Shape::BOX);
+          if (ImGui::MenuItem("Sphere"))
+            scene->addObject(Shape::SPHERE);
+          ImGui::EndMenu();
+        }
+        ImGui::EndMenuBar();
+      }
       const ImVec2 p = ImGui::GetCursorScreenPos();
       const ImVec2 wsize = ImGui::GetContentRegionAvail();
 
@@ -91,31 +104,42 @@ void buildUi(GLFWwindow* window, Viewport* viewport) {
     }
     ImGui::End();
 
+    auto& objs = viewport->scene->sceneTree;
+
     ImGui::Begin("Object Tree", nullptr);
-    static unsigned int selected = 0;
+    static unsigned int selected = UINT_MAX;
     {
-      for (const auto& [key, value] : viewport->scene->sceneTree) {
-        std::string label = "Object " + std::to_string(key);
-        if (ImGui::Selectable(label.c_str(), selected == key))
-          selected = key;
+      if (ImGui::BeginPopup("obj_menu_popup")) {
+        if (ImGui::Selectable("Delete"))
+          scene->deleteObject(selected);
+        ImGui::EndPopup();
+      }
+
+      for (int i = 0; i < objs.size(); i++) {
+        auto& obj = objs[i];
+        if (ImGui::Selectable(obj.name.c_str(), selected == i))
+          selected = i;
+        if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+          ImGui::OpenPopup("obj_menu_popup");
       }
     }
     ImGui::End();
 
     ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoScrollbar);
     {
-      Object& active = viewport->scene->sceneTree[selected];
+      if (selected < UINT_MAX && objs.size() > 0) {
+        Object& active = viewport->scene->sceneTree[selected];
 
-      // ImGui::InputText("Name", test, 16);
+        ImGui::InputText("Name", active.name.data(), 16);
 
-      if (ImGui::CollapsingHeader("Transformation", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::InputFloat3("Position", &active.position.x);
-        ImGui::InputFloat3("Scale", &active.scale.x);
-        ImGui::InputFloat3("Rotation", &active.rotation.x);
+        if (ImGui::CollapsingHeader("Transformation", ImGuiTreeNodeFlags_DefaultOpen)) {
+          ImGui::InputFloat3("Position", &active.position.x);
+          ImGui::InputFloat3("Scale", &active.scale.x);
+          ImGui::InputFloat3("Rotation", &active.rotation.x);
+        }
+        // if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // }
       }
-
-      // if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-      // }
     }
     ImGui::End();
   }
