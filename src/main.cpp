@@ -44,6 +44,7 @@ void initializeImGui(GLFWwindow* window) {
 
   ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
+  setStyle();
 
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 430");

@@ -102,7 +102,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
   float dist = CLIP_START;
 
-  vec3 col;
+  vec3 col = vec3(0.05);
 
   for (int i=0; i < STEPS; i++) {
     vec3 pos = ro + rd * dist;
@@ -111,7 +111,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     if (s.dist < HIT_THRESHOLD) {
       vec3 nrm = calcNormal(pos, s.dist);
       col = s.color;
-      col *= max(dot(normalize(vec3(-1.0,-1.0,0.0)), nrm), 0.0);
+      col *= 0.1 + 0.9*max(dot(normalize(-vec3(0.8,1.0,0.5)), nrm), 0.0);
     } else if (s.dist > CLIP_END) {
       break;
     }

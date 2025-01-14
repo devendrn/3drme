@@ -5,17 +5,119 @@
 #include "scene.hpp"
 #include "viewport.hpp"
 
-void processInput(GLFWwindow* window) {
-  // if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-  //   glfwSetWindowShouldClose(window, 1);
+void setStyle() {
+  ImGuiIO& io = ImGui::GetIO();
+  io.Fonts->AddFontFromFileTTF("../lib/imgui/misc/fonts/DroidSans.ttf", 15);
+
+  ImGuiStyle& style = ImGui::GetStyle();
+
+  // palette
+  ImVec4 black = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+  ImVec4 white = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+  ImVec4 grey = ImVec4(0.60f, 0.60f, 0.60f, 0.35f);
+  ImVec4 dark = ImVec4(0.05f, 0.05f, 0.05f, 1.00f);
+  ImVec4 darkgrey = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+  ImVec4 lightgrey = ImVec4(0.40f, 0.40f, 0.40f, 1.00f);
+
+  style.Colors[ImGuiCol_Text] = white;
+  style.Colors[ImGuiCol_TextDisabled] = grey;
+  style.Colors[ImGuiCol_WindowBg] = dark;
+  style.Colors[ImGuiCol_ChildBg] = dark;
+  style.Colors[ImGuiCol_PopupBg] = dark;
+  style.Colors[ImGuiCol_Border] = grey;
+  style.Colors[ImGuiCol_BorderShadow] = black;
+  style.Colors[ImGuiCol_FrameBg] = darkgrey;
+  style.Colors[ImGuiCol_FrameBgHovered] = grey;
+  style.Colors[ImGuiCol_FrameBgActive] = grey;
+  style.Colors[ImGuiCol_TitleBg] = darkgrey;
+  style.Colors[ImGuiCol_TitleBgActive] = darkgrey;
+  style.Colors[ImGuiCol_TitleBgCollapsed] = darkgrey;
+  style.Colors[ImGuiCol_MenuBarBg] = darkgrey;
+  style.Colors[ImGuiCol_ScrollbarBg] = darkgrey;
+  style.Colors[ImGuiCol_ScrollbarGrabHovered] = grey;
+  style.Colors[ImGuiCol_ScrollbarGrabActive] = grey;
+  style.Colors[ImGuiCol_CheckMark] = lightgrey;
+  style.Colors[ImGuiCol_SliderGrab] = lightgrey;
+  style.Colors[ImGuiCol_SliderGrabActive] = white;
+  style.Colors[ImGuiCol_Button] = darkgrey;
+  style.Colors[ImGuiCol_ButtonHovered] = grey;
+  style.Colors[ImGuiCol_ButtonActive] = darkgrey;
+  style.Colors[ImGuiCol_Header] = darkgrey;
+  style.Colors[ImGuiCol_HeaderHovered] = grey;
+  style.Colors[ImGuiCol_HeaderActive] = grey;
+  style.Colors[ImGuiCol_Separator] = grey;
+  style.Colors[ImGuiCol_SeparatorHovered] = grey;
+  style.Colors[ImGuiCol_SeparatorActive] = grey;
+  style.Colors[ImGuiCol_ResizeGrip] = darkgrey;
+  style.Colors[ImGuiCol_ResizeGripHovered] = grey;
+  style.Colors[ImGuiCol_ResizeGripActive] = grey;
+  style.Colors[ImGuiCol_Tab] = darkgrey;
+  style.Colors[ImGuiCol_TabHovered] = grey;
+  style.Colors[ImGuiCol_TabActive] = grey;
+  style.Colors[ImGuiCol_TabUnfocused] = grey;
+  style.Colors[ImGuiCol_TabUnfocused] = grey;
+  style.Colors[ImGuiCol_TabUnfocusedActive] = grey;
+  style.Colors[ImGuiCol_DockingPreview] = grey;
+  style.Colors[ImGuiCol_DockingEmptyBg] = grey;
+  style.Colors[ImGuiCol_PlotLines] = white;
+  style.Colors[ImGuiCol_PlotLinesHovered] = grey;
+  style.Colors[ImGuiCol_PlotHistogram] = white;
+  style.Colors[ImGuiCol_PlotHistogramHovered] = grey;
+  style.Colors[ImGuiCol_TableHeaderBg] = dark;
+  style.Colors[ImGuiCol_TableBorderStrong] = darkgrey;
+  style.Colors[ImGuiCol_TableBorderLight] = grey;
+  style.Colors[ImGuiCol_TableRowBg] = black;
+  style.Colors[ImGuiCol_TableRowBgAlt] = white;
+  style.Colors[ImGuiCol_TextSelectedBg] = darkgrey;
+  style.Colors[ImGuiCol_DragDropTarget] = darkgrey;
+  style.Colors[ImGuiCol_NavHighlight] = grey;
+  style.Colors[ImGuiCol_NavWindowingHighlight] = grey;
+  style.Colors[ImGuiCol_NavWindowingDimBg] = grey;
+  style.Colors[ImGuiCol_ModalWindowDimBg] = grey;
+
+  // Style
+  // style.WindowPadding = ImVec2(8.0f, 8.0f);
+  // style.FramePadding = ImVec2(3.00f, 3.00f);
+  // style.CellPadding = ImVec2(0.00f, 5.00f);
+  // style.ItemSpacing = ImVec2(6.00f, 6.00f);
+  // style.ItemInnerSpacing = ImVec2(5.00f, 5.00f);
+  // style.TouchExtraPadding = ImVec2(0.00f, 0.00f);
+  // style.IndentSpacing = 15;
+  // style.ScrollbarSize = 18;
+
+  // style.WindowBorderSize = 0;
+  // style.ChildBorderSize = 0;
+  // style.PopupBorderSize = 0;
+  // style.FrameBorderSize = 0;
+  // style.TabBorderSize = 0;
+
+  style.GrabMinSize = 5;
+
+  style.FrameRounding = 0;
+  style.WindowRounding = 0;
+  style.ChildRounding = 0;
+  style.PopupRounding = 0;
+  style.ScrollbarRounding = 0;
+  style.GrabRounding = 0;
+  style.TabRounding = 0;
+
+  style.LogSliderDeadzone = 0;
+
+  style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
 }
+
+/*
+void processInput(GLFWwindow* window) {
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    glfwSetWindowShouldClose(window, 1);
+}*/
 
 void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
-  processInput(window);
+  // processInput(window);
 
   static bool optFullscreenPersistant = true;
   static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
@@ -54,7 +156,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
       ImGui::EndMenuBar();
     }
 
-    //ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
