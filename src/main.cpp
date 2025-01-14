@@ -26,7 +26,7 @@ GLFWwindow* initializeWindow() {
 
   glfwMakeContextCurrent(window);
 
-  //glfwSwapInterval(0); // disable vsync
+  // glfwSwapInterval(0); // disable vsync
 
   if (gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == 0) {
     std::cerr << "Failed to initialize GLAD" << std::endl;
@@ -44,7 +44,6 @@ void initializeImGui(GLFWwindow* window) {
 
   ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
-  style.WindowRounding = 0.0f;
 
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 430");
@@ -55,11 +54,11 @@ int main() {
   if (window == nullptr)
     return -1;
 
-  initializeImGui(window);
-
   auto scene = Scene();
 
   Viewport viewport(window, &scene);
+
+  initializeImGui(window);
 
   while (glfwWindowShouldClose(window) == 0) {
     buildUi(window, &viewport, &scene);

@@ -54,7 +54,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
       ImGui::EndMenuBar();
     }
 
-    ImGui::ShowDemoWindow();
+    //ImGui::ShowDemoWindow();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
@@ -86,7 +86,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     }
     ImGui::End();
 
-    ImGui::Begin("Scene", nullptr, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Begin("Scene", nullptr);
     {
       if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Toggle Orthographic mode", &viewport->camera.isOrtho);
