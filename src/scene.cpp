@@ -41,7 +41,7 @@ void Scene::updateObjectUbo() {
   for (const auto& obj : sceneTree) {
     ObjectUboData data;
     data.transformation = constructTransformationMat(obj.position, obj.scale, obj.rotation);
-    data.typeMatId = glm::ivec4(obj.type, obj.matId, 0, 0);
+    data.typeMatIdMode = glm::ivec4(obj.type, obj.matId, obj.mode, 0);
     objectData.push_back(data);
   }
 
@@ -85,4 +85,18 @@ glm::mat4 Scene::constructTransformationMat(glm::vec3 position, glm::vec3 scale,
       c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z, -position.y, //
       -s.y, s.x * c.y, c.x * c.y, -position.z,                                          //
       1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z, 1.0);                             //
+}
+
+void Scene::selectObject(unsigned int index) {
+  deselectObjects();
+  sceneTree[index].mode = 1;
+  lastSelectedObjectIndex = static_cast<int>(index);
+  std::cout << "[Scene] Selected object: id=" << sceneTree[index].id << "\n";
+}
+
+void Scene::deselectObjects() {
+  if (lastSelectedObjectIndex >= 0) {
+    sceneTree[lastSelectedObjectIndex].mode = 0;
+    lastSelectedObjectIndex = -1;
+  }
 }

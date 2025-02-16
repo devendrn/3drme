@@ -14,6 +14,7 @@ struct Object {
   std::string name;
   int type;
   int matId = 0;
+  int mode = 0; // right now only used as boolean for selected
   glm::vec3 position = glm::vec3(0.0f);
   glm::vec3 rotation = glm::vec3(0.0f);
   glm::vec3 scale = glm::vec3(1.0f);
@@ -35,7 +36,7 @@ struct MaterialUboData {
 
 struct ObjectUboData {
   glm::mat4 transformation; // not a composite matrix
-  glm::ivec4 typeMatId;     // z,w are for padding
+  glm::ivec4 typeMatIdMode; // x=type, y=mat_id, z=mode, w is for padding
 };
 
 /*
@@ -68,7 +69,13 @@ public:
 
   void updateObjectUbo();
 
+  void selectObject(unsigned int index);
+
+  void deselectObjects();
+
 private:
+  int lastSelectedObjectIndex = -1;
+
   glm::mat4 constructTransformationMat(glm::vec3 position, glm::vec3 scale, glm::vec3 rotation);
 };
 

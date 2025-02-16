@@ -10,6 +10,8 @@ uniform float uTime;
 
 #define MAX_OBJECTS 32
 
+#define FLOAT_MAX 1e10
+
 // TODO: extend object types, properties
 
 struct ObjectUboData {
@@ -47,6 +49,7 @@ float sdfShape(vec3 p, int type) {
 struct Surface {
   float dist;
   vec3 color;
+  float selected;
 };
 
 Surface minSurf(Surface a, Surface b) {
@@ -63,7 +66,7 @@ vec3 applyTransform(vec3 p, mat4 t) {
 }
 
 float sceneSdf(vec3 p) {
-  float f = 1e10;
+  float f = FLOAT_MAX;
   for (int i = 0; i < objectsCount; i++) {
     vec3 q = applyTransform(p, objects[i].transformation); // This is expensive
     float dist = sdfShape(q, objects[i].typeMatId.x);
@@ -73,13 +76,13 @@ float sceneSdf(vec3 p) {
 }
 
 Surface sceneSdfSurf(vec3 p)  {
-  Surface s = Surface(1e10, vec3(0.0));
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
   for (int i = 0; i < objectsCount; i++) {
     ObjectUboData obj = objects[i];
     vec3 q = applyTransform(p, obj.transformation); // This is expensive
     float dist = sdfShape(q, obj.typeMatId.x);
     vec3 col = obj.typeMatId.x > 0 ? vec3(1.0, 0.0, 0.0) : vec3(1.0); // TODO: Implement materials
-    s = minSurf(s, Surface(dist, col));
+    s = minSurf(s, Surface(dist, col, float(obj.typeMatId.z)));
   }
   return s;
 }
@@ -92,8 +95,8 @@ vec3 calcNormal(vec3 p, float d0) {
   return normalize(vec3(dx, dy, dz));
 }
 
-// TODO: use enhanced sphere tracing
-vec3 rayMarch(vec3 ro, vec3 rd) {
+// unused - preserved for comparision
+vec3 rayMarchSimple(vec3 ro, vec3 rd) {
   const int STEPS = 32;
   const float HIT_THRESHOLD = 0.01;
 
@@ -118,6 +121,68 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
     dist += s.dist;
   }
+
+  return col;
+}
+
+vec3 rayMarch(vec3 ro, vec3 rd) {
+  const int MAX_ITERATIONS = 48;
+  const float TMIN = 0.0;
+  const float TMAX = 50.0;
+
+  float candidateError = FLOAT_MAX;
+  float pixelRadius = 0.002;
+  float previousRadius = 0.0;
+  float stepLength = 0.0;
+  float omega = 1.99;
+  float dist = TMIN;
+
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
+  vec3 pos = ro;
+  for (int i=0; i < MAX_ITERATIONS; i++) {
+    pos = ro + rd * dist;
+
+    s = sceneSdfSurf(pos);
+
+    float signedRadius = s.dist;
+    float radius = abs(s.dist);
+
+    bool sorFail = omega > 1.0 && (radius + previousRadius) < stepLength;
+
+    if (sorFail) {
+      stepLength -= omega * stepLength;
+      omega = 1.0;
+    } else {
+      stepLength = omega * signedRadius; 
+    }
+
+    previousRadius = radius;
+
+    float error = radius / dist;
+    if (!sorFail && error < candidateError) {
+      candidateError = error;
+    }
+
+    if (!sorFail && error < pixelRadius || dist > TMAX) break;
+
+    dist += stepLength;
+  }
+
+  if (dist > TMAX || candidateError > pixelRadius) {
+    // skybox
+    return vec3(0.06);
+  }
+
+  vec3 col = s.color;
+  vec3 nrm = calcNormal(pos, s.dist);
+  float cosr = 1.0-max(dot(nrm, rd), 0.0);
+
+  col *= 0.1 + 0.9*max(dot(normalize(-vec3(0.8,1.0,0.5)), nrm), 0.0);
+
+  float selfactor = 0.1 + 0.2*cosr+ 0.7*cosr*cosr*cosr;
+  selfactor *= s.selected;
+  col = mix(col, vec3(1.0, 0.7, 0.3), selfactor);
+  col *= 1.0+selfactor;
 
   return col;
 }

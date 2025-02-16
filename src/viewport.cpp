@@ -59,7 +59,6 @@ Viewport::Viewport(GLFWwindow* window, Scene* scene) : window(window), camera(Ca
   glfwSetScrollCallback(window, inputScrollCallback);
 }
 
-// Viewport::~Viewport() = default;
 Viewport::~Viewport() {
   glDeleteVertexArrays(1, &VAO);
   glDeleteBuffers(1, &VBO);

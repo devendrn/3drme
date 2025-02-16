@@ -124,10 +124,10 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
   if (optFullscreenPersistant) {
-    const ImGuiViewport* viewport = ImGui::GetMainViewport(); // const correctness
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGui::SetNextWindowViewport(viewport->ID);
+    const ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(imguiViewport->WorkPos);
+    ImGui::SetNextWindowSize(imguiViewport->WorkSize);
+    ImGui::SetNextWindowViewport(imguiViewport->ID);
     windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
   }
 
@@ -206,21 +206,25 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     }
     ImGui::End();
 
-    auto& objs = viewport->scene->sceneTree;
+    auto& objs = scene->sceneTree;
 
     ImGui::Begin("Object Tree", nullptr);
     static unsigned int selected = UINT_MAX;
     {
       if (ImGui::BeginPopup("obj_menu_popup")) {
-        if (ImGui::Selectable("Delete"))
+        if (ImGui::Selectable("Delete")) {
           scene->deleteObject(selected);
+          scene->deselectObjects();
+        }
         ImGui::EndPopup();
       }
 
       for (int i = 0; i < objs.size(); i++) {
         auto& obj = objs[i];
-        if (ImGui::Selectable(obj.name.c_str(), selected == i))
+        if (ImGui::Selectable(obj.name.c_str(), selected == i)) {
           selected = i;
+          scene->selectObject(i);
+        }
         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
           ImGui::OpenPopup("obj_menu_popup");
       }
@@ -230,7 +234,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoScrollbar);
     {
       if (selected < UINT_MAX && objs.size() > 0) {
-        Object& active = viewport->scene->sceneTree[selected];
+        Object& active = scene->sceneTree[selected];
 
         ImGui::InputText("Name", active.name.data(), 16);
 
