@@ -7,6 +7,8 @@ uniform vec3 uProj;
 uniform vec2 uJitterOffset;
 uniform vec2 uResolution;
 uniform float uTime;
+uniform int uRaymarchingSteps;
+uniform vec3 uRaymarchingParams;
 
 #define MAX_OBJECTS 32
 
@@ -126,12 +128,12 @@ vec3 rayMarchSimple(vec3 ro, vec3 rd) {
 }
 
 vec3 rayMarch(vec3 ro, vec3 rd) {
-  const int MAX_ITERATIONS = 48;
-  const float TMIN = 0.0;
-  const float TMAX = 50.0;
+  const int MAX_ITERATIONS = uRaymarchingSteps;
+  const float TMIN = uRaymarchingParams.x;
+  const float TMAX = uRaymarchingParams.y;
+  const float PIXEL_RADIUS = uRaymarchingParams.z;
 
   float candidateError = FLOAT_MAX;
-  float pixelRadius = 0.002;
   float previousRadius = 0.0;
   float stepLength = 0.0;
   float omega = 1.99;
@@ -163,12 +165,12 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
       candidateError = error;
     }
 
-    if (!sorFail && error < pixelRadius || dist > TMAX) break;
+    if (!sorFail && error < PIXEL_RADIUS || dist > TMAX) break;
 
     dist += stepLength;
   }
 
-  if (dist > TMAX || candidateError > pixelRadius) {
+  if (dist > TMAX || candidateError > PIXEL_RADIUS) {
     // skybox
     return vec3(0.06);
   }

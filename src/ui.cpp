@@ -195,10 +195,10 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
         ImGui::SliderFloat("FOV", &viewport->camera.fov, 0.1, 1.5);
         ImGui::SliderFloat("Scale", &viewport->camera.scale, 0.05, 2.0);
         ImGui::SliderFloat("Downscale", &viewport->downscaleFactor, 0.05, 1.0);
-        ImGui::SliderInt("Ray steps", &viewport->raymarchingSteps, 4, 128);
-        ImGui::SliderFloat("Clip start", &viewport->raymarchingClipStart, 0.1, 2.0);
-        ImGui::SliderFloat("Clip end", &viewport->raymarchingClipEnd, 0.5, 256.0);
-        ImGui::SliderFloat("Hit bias", &viewport->raymarchingHitBias, 0.005, 0.2);
+        ImGui::SliderInt("Iterations", &viewport->raymarchingSteps, 4, 128);
+        ImGui::SliderFloat("Ray start", &viewport->raymarchingClipStart, 0.0, 4.0);
+        ImGui::SliderFloat("Ray end", &viewport->raymarchingClipEnd, 0.5, 256.0);
+        ImGui::SliderFloat("Pixel radius", &viewport->raymarchingPixelRadius, 0.0001, 0.01, "%.4f");
       }
       if (ImGui::CollapsingHeader("TAAU", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::SliderFloat("Feedback", &viewport->taaFeedbackFactor, 0.0, 0.98);

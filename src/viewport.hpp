@@ -56,9 +56,9 @@ public:
   int frameCounter = 0;
 
   int raymarchingSteps = 32;
-  float raymarchingClipStart = 0.0;
-  float raymarchingClipEnd = 10.0;
-  float raymarchingHitBias = 0.01;
+  float raymarchingClipStart = 0.5f;
+  float raymarchingClipEnd = 20.0f;
+  float raymarchingPixelRadius = 0.002f;
 
   static constexpr int maxFrames = 128;
   std::array<glm::vec2, maxFrames> haltonSequence;
