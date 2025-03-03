@@ -1,7 +1,9 @@
 #include "ui.hpp"
 
+#include <imfilebrowser.h>
 #include <imgui.h>
 
+#include "projectdata.hpp"
 #include "scene.hpp"
 #include "viewport.hpp"
 
@@ -9,6 +11,7 @@ void setStyle() {
   ImGuiIO& io = ImGui::GetIO();
   io.Fonts->AddFontFromFileTTF("../lib/imgui/misc/fonts/DroidSans.ttf", 15);
 
+  ImGui::StyleColorsDark();
   ImGuiStyle& style = ImGui::GetStyle();
 
   // palette
@@ -106,22 +109,58 @@ void setStyle() {
   style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
 }
 
-/*
-void processInput(GLFWwindow* window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    glfwSetWindowShouldClose(window, 1);
-}*/
+void updateWindowTitle(GLFWwindow* window, std::string& filepath) {
+  std::string title;
+  if (filepath.empty()) {
+    title = "(*Unnamed)";
+  } else {
+    auto lastSlash = filepath.find_last_of('/');
+    if (lastSlash == std::string::npos) {
+      title = filepath;
+    } else {
+      title = filepath.substr(lastSlash + 1);
+    }
+  }
+  title += " - Aktinomarcher";
+  glfwSetWindowTitle(window, title.c_str());
+};
 
-void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
+void setupUi(GLFWwindow* window) {
+  setStyle();
+  std::string a;
+  updateWindowTitle(window, a);
+}
+
+void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
 
   // processInput(window);
 
+  static auto loadFileDialog = ImGui::FileBrowser();
+  static auto saveFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
+  loadFileDialog.SetTitle("Load project file");
+  loadFileDialog.SetTypeFilters({".prj"});
+  saveFileDialog.SetTitle("Save project file");
+  saveFileDialog.SetTypeFilters({".prj"});
+
   static bool optFullscreenPersistant = true;
   static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
   ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+
+  ImGuiIO& io = ImGui::GetIO();
+  if (io.KeyCtrl) {
+    if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+      if ((io.KeyShift || !pd.hasLoadedProjectFile())) {
+        saveFileDialog.Open();
+      } else {
+        pd.saveProjectFile(scene, viewport);
+      }
+    } else if (ImGui::IsKeyPressed(ImGuiKey_O)) {
+      loadFileDialog.Open();
+    }
+  }
 
   if (optFullscreenPersistant) {
     const ImGuiViewport* imguiViewport = ImGui::GetMainViewport();
@@ -142,11 +181,23 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     ImGui::DockSpace(dockspaceId, ImVec2(0, 0), dockspaceFlags);
     if (ImGui::BeginMenuBar()) {
       if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Load", "Ctrl+O")) {
+          loadFileDialog.Open();
+        }
+        if (ImGui::MenuItem("Save", "Ctrl+S", false, pd.hasLoadedProjectFile())) {
+          pd.saveProjectFile(scene, viewport);
+        }
+        if (ImGui::MenuItem("Save as", "Ctrl+Shift+S")) {
+          saveFileDialog.Open();
+        }
         if (ImGui::MenuItem("Exit"))
           glfwSetWindowShouldClose(window, 1);
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Project")) {
+        // if (ImGui::MenuItem("Save image")) {
+        //   saveFileDialog.Open();
+        // }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("About")) {
@@ -154,20 +205,36 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();
+
+      loadFileDialog.Display();
+      saveFileDialog.Display();
+
+      if (loadFileDialog.HasSelected()) {
+        std::string path = loadFileDialog.GetSelected();
+        pd.loadProjectFile(scene, viewport, path);
+        updateWindowTitle(window, path);
+        loadFileDialog.ClearSelected();
+      }
+      if (saveFileDialog.HasSelected()) {
+        std::string path = saveFileDialog.GetSelected();
+        pd.saveProjectFile(scene, viewport, saveFileDialog.GetSelected());
+        updateWindowTitle(window, path);
+        saveFileDialog.ClearSelected();
+      }
     }
 
     // ImGui::ShowDemoWindow();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui ::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("Viewport", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
     ImGui::PopStyleVar(1);
     {
       if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("Add")) {
           if (ImGui::MenuItem("Box"))
-            scene->addObject(Shape::BOX);
+            scene.addObject(Shape::BOX);
           if (ImGui::MenuItem("Sphere"))
-            scene->addObject(Shape::SPHERE);
+            scene.addObject(Shape::SPHERE);
           ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
@@ -175,10 +242,10 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
       const ImVec2 p = ImGui::GetCursorScreenPos();
       const ImVec2 wsize = ImGui::GetContentRegionAvail();
 
-      viewport->hovered = ImGui::IsWindowHovered();
+      viewport.hovered = ImGui::IsWindowHovered();
 
-      viewport->resize(static_cast<int>(wsize.x), static_cast<int>(wsize.y)); // only resizes if wsize changed
-      ImGui::Image((ImTextureID)viewport->taaFramebuffer.textureID, wsize, ImVec2(0, 1), ImVec2(1, 0));
+      viewport.resize(static_cast<int>(wsize.x), static_cast<int>(wsize.y)); // only resizes if wsize changed
+      ImGui::Image((ImTextureID)viewport.taaFramebuffer.textureID, wsize, ImVec2(0, 1), ImVec2(1, 0));
 
       std::string fpsText(5, '\0');
       sprintf(fpsText.data(), "%.0f FPS", ImGui::GetIO().Framerate);
@@ -191,30 +258,30 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     ImGui::Begin("Scene", nullptr);
     {
       if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Toggle Orthographic mode", &viewport->camera.isOrtho);
-        ImGui::SliderFloat("FOV", &viewport->camera.fov, 0.1, 1.5);
-        ImGui::SliderFloat("Scale", &viewport->camera.scale, 0.05, 2.0);
-        ImGui::SliderFloat("Downscale", &viewport->downscaleFactor, 0.05, 1.0);
-        ImGui::SliderInt("Iterations", &viewport->raymarchingSteps, 4, 128);
-        ImGui::SliderFloat("Ray start", &viewport->raymarchingClipStart, 0.0, 4.0);
-        ImGui::SliderFloat("Ray end", &viewport->raymarchingClipEnd, 0.5, 256.0);
-        ImGui::SliderFloat("Pixel radius", &viewport->raymarchingPixelRadius, 0.0001, 0.01, "%.4f");
+        ImGui::Checkbox("Toggle Orthographic mode", &viewport.camera.isOrtho);
+        ImGui::SliderFloat("FOV", &viewport.camera.fov, 0.1, 1.5);
+        ImGui::SliderFloat("Scale", &viewport.camera.scale, 0.05, 2.0);
+        ImGui::SliderFloat("Downscale", &viewport.downscaleFactor, 0.05, 1.0);
+        ImGui::SliderInt("Iterations", &viewport.raymarchingSteps, 4, 128);
+        ImGui::SliderFloat("Ray start", &viewport.raymarchingClipStart, 0.0, 4.0);
+        ImGui::SliderFloat("Ray end", &viewport.raymarchingClipEnd, 0.5, 256.0);
+        ImGui::SliderFloat("Pixel radius", &viewport.raymarchingPixelRadius, 0.0001, 0.01, "%.4f");
       }
       if (ImGui::CollapsingHeader("TAAU", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::SliderFloat("Feedback", &viewport->taaFeedbackFactor, 0.0, 0.98);
+        ImGui::SliderFloat("Feedback", &viewport.taaFeedbackFactor, 0.0, 0.98);
       }
     }
     ImGui::End();
 
-    auto& objs = scene->sceneTree;
+    auto& objs = scene.sceneTree;
 
     ImGui::Begin("Object Tree", nullptr);
     static unsigned int selected = UINT_MAX;
     {
       if (ImGui::BeginPopup("obj_menu_popup")) {
         if (ImGui::Selectable("Delete")) {
-          scene->deleteObject(selected);
-          scene->deselectObjects();
+          scene.deleteObject(selected);
+          scene.deselectObjects();
         }
         ImGui::EndPopup();
       }
@@ -223,7 +290,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
         auto& obj = objs[i];
         if (ImGui::Selectable(obj.name.c_str(), selected == i)) {
           selected = i;
-          scene->selectObject(i);
+          scene.selectObject(i);
         }
         if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
           ImGui::OpenPopup("obj_menu_popup");
@@ -234,7 +301,7 @@ void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene) {
     ImGui::Begin("Properties", nullptr, ImGuiWindowFlags_NoScrollbar);
     {
       if (selected < UINT_MAX && objs.size() > 0) {
-        Object& active = scene->sceneTree[selected];
+        Object& active = scene.sceneTree[selected];
 
         ImGui::InputText("Name", active.name.data(), 16);
 

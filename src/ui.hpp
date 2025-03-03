@@ -8,10 +8,13 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include "projectdata.hpp"
 #include "viewport.hpp"
 
 void setStyle();
 
-void buildUi(GLFWwindow* window, Viewport* viewport, Scene* scene);
+void setupUi(GLFWwindow* window);
+
+void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene);
 
 #endif

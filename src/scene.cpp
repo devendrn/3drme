@@ -24,9 +24,10 @@ Scene::Scene() {
 }
 
 void Scene::addObject(Shape shape) {
-  static unsigned int objId = 0;
+  unsigned int objId = 0;
+  if (!sceneTree.empty())
+    objId = sceneTree.back().id + 1;
   sceneTree.push_back(Object{objId, "Object " + std::to_string(objId), shape});
-  objId++;
   std::cout << "[Scene] Added object: type=" << shape << "\n";
 }
 

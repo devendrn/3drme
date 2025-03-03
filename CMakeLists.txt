@@ -13,6 +13,8 @@ find_package(glm 0.9 REQUIRED)
 
 add_subdirectory(lib/glad)
 add_subdirectory(lib/imgui)
+include_directories(lib/cereal/include)
+include_directories(lib/imbrowser/include)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
@@ -21,6 +23,7 @@ add_executable(${PROJECT_NAME}
   src/viewport.cpp
   src/camera.cpp
   src/shader.cpp
+  src/projectdata.cpp
 )
 
 file(GLOB_RECURSE SHADER_FILES "src/shaders/*")
@@ -36,3 +39,4 @@ foreach(shader_file ${SHADER_FILES})
 endforeach()
 
 target_link_libraries(${PROJECT_NAME} imgui glfw OpenGL::GL glm::glm glad)
+
