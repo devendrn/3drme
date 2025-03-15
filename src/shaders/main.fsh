@@ -67,6 +67,12 @@ vec3 applyTransform(vec3 p, mat4 t) {
   return p;
 }
 
+Surface nodeEditorSdf(vec3 pos, float t) {
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
+  // !sdf_inline
+  return s;
+}
+
 float sceneSdf(vec3 p) {
   float f = FLOAT_MAX;
   for (int i = 0; i < objectsCount; i++) {
@@ -74,6 +80,8 @@ float sceneSdf(vec3 p) {
     float dist = sdfShape(q, objects[i].typeMatId.x);
     f = min(f, dist);
   }
+  // FIXME: Construct simpler separate sdf from node editor
+  f = min(f, nodeEditorSdf(p, uTime).dist);
   return f;
 }
 
@@ -86,6 +94,7 @@ Surface sceneSdfSurf(vec3 p)  {
     vec3 col = obj.typeMatId.x > 0 ? vec3(1.0, 0.0, 0.0) : vec3(1.0); // TODO: Implement materials
     s = minSurf(s, Surface(dist, col, float(obj.typeMatId.z)));
   }
+  s = minSurf(s, nodeEditorSdf(p, uTime));
   return s;
 }
 
@@ -136,7 +145,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
   float candidateError = FLOAT_MAX;
   float previousRadius = 0.0;
   float stepLength = 0.0;
-  float omega = 1.99;
+  float omega = 1.2;
   float dist = TMIN;
 
   Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);

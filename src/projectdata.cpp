@@ -24,7 +24,9 @@ template <class Archive> void serialize(Archive& archive, Viewport& d) { archive
 
 } // namespace cereal
 
-ProjectData::ProjectData() {};
+ProjectData::ProjectData() { nodeEditorContext = ax::NodeEditor::CreateEditor(); };
+
+ProjectData::~ProjectData() { ax::NodeEditor::DestroyEditor(nodeEditorContext); }
 
 void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, const std::string& filepath) {
   std::ofstream file(filepath, std::ios::binary);
@@ -67,4 +69,3 @@ void ProjectData::loadProjectFile(Scene& scene, Viewport& viewport, const std::s
 }
 
 bool ProjectData::hasLoadedProjectFile() const { return loadedFile; }
-

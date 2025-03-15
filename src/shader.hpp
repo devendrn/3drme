@@ -11,12 +11,18 @@
 class Shader {
 public:
   unsigned int ID;
+  std::string fshEdited;
 
   Shader(const std::string& name);
 
   void use() const;
 
   void reloadFragment();
+
+  void reloadFshSource();
+  void reloadVshSource();
+
+  void resetFshSource();
 
   void setUniformInt(const std::string& name, int value) const;
 
@@ -33,10 +39,12 @@ private:
   std::string name;
   unsigned int fragmentShader;
   unsigned int vertexShader;
+  std::string fsh;
+  std::string vsh;
 
   std::string readFile(const std::string& filePath);
 
-  void loadShader(GLenum type);
+  void loadShader(GLenum type,  const char* code);
 
   void attachLinkShaders();
 };

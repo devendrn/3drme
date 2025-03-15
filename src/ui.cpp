@@ -1,8 +1,13 @@
 #include "ui.hpp"
 
+#include <iostream>
+
+#include <glm/fwd.hpp>
 #include <imfilebrowser.h>
 #include <imgui.h>
 
+#include "node_graph.hpp"
+#include "nodes.hpp"
 #include "projectdata.hpp"
 #include "scene.hpp"
 #include "viewport.hpp"
@@ -320,6 +325,56 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
       }
     }
     ImGui::End();
+
+    ImGui ::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("Node Editor", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_MenuBar);
+    ImGui::PopStyleVar(1);
+    {
+      if (ImGui::BeginMenuBar()) {
+        if (ImGui::BeginMenu("Add")) {
+          if (ImGui::BeginMenu("Surface")) {
+            if (ImGui::MenuItem("Box"))
+              sdfNodeEditor.addNode<SurfaceCreateBoxNode>();
+            if (ImGui::MenuItem("Combine"))
+              sdfNodeEditor.addNode<SurfaceCombineNode>();
+            if (ImGui::MenuItem("Output"))
+              sdfNodeEditor.addNode<SurfaceOutputNode>();
+            ImGui::EndMenu();
+          }
+          if (ImGui::BeginMenu("Vec3")) {
+            if (ImGui::MenuItem("Translate"))
+              sdfNodeEditor.addNode<Vec3TranslateNode>();
+            if (ImGui::MenuItem("Scale"))
+              sdfNodeEditor.addNode<Vec3ScaleNode>();
+            ImGui::EndMenu();
+          }
+          if (ImGui::BeginMenu("Input")) {
+            if (ImGui::MenuItem("Position"))
+              sdfNodeEditor.addNode<InputPosNode>();
+            if (ImGui::MenuItem("Time"))
+              sdfNodeEditor.addNode<InputTimeNode>();
+            ImGui::EndMenu();
+          }
+          ImGui::EndMenu();
+        }
+        if (ImGui::MenuItem("Refresh")) {
+          std::string glslCode = sdfNodeEditor.generateGlslCode();
+
+          viewport.shader.resetFshSource();
+          std::string& code = viewport.shader.fshEdited;
+
+          auto line = code.find("// !sdf_inline");
+          code.insert(line, glslCode);
+
+          std::cout << "[Node editor] Inline shader code: \n"<< glslCode << "\n";
+          viewport.shader.reloadFragment();
+        }
+      }
+      ImGui::EndMenuBar();
+
+      sdfNodeEditor.show();
+    }
+    ImGui::End();
   }
-  ImGui::End();
+  ImGui::End(); // Dockspace
 }

@@ -27,6 +27,8 @@ add_executable(${PROJECT_NAME}
   src/camera.cpp
   src/shader.cpp
   src/projectdata.cpp
+  src/nodes.cpp
+  src/node_graph.cpp
 )
 
 # FIXME: Use proper directory structure

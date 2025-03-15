@@ -6,10 +6,12 @@
 
 Shader::Shader(const std::string& name) : name(name) {
   vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  loadShader(GL_VERTEX_SHADER);
+  reloadVshSource();
+  loadShader(GL_VERTEX_SHADER, vsh.c_str());
 
   fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  loadShader(GL_FRAGMENT_SHADER);
+  reloadFshSource();
+  loadShader(GL_FRAGMENT_SHADER, fshEdited.c_str());
 
   ID = glCreateProgram();
   attachLinkShaders();
@@ -17,9 +19,18 @@ Shader::Shader(const std::string& name) : name(name) {
 
 void Shader::use() const { glUseProgram(ID); }
 
+void Shader::reloadVshSource() { vsh = readFile("shaders/" + name + ".vsh"); }
+
+void Shader::reloadFshSource() {
+  fsh = readFile("shaders/" + name + ".fsh");
+  resetFshSource();
+}
+
+void Shader::resetFshSource() { fshEdited = fsh; }
+
 void Shader::reloadFragment() {
-  std::cout << "Reloading fragment shader\n";
-  loadShader(GL_FRAGMENT_SHADER);
+  std::cout << "[Shader] " << name << ": Reloading fragment shader\n";
+  loadShader(GL_FRAGMENT_SHADER, fshEdited.c_str());
   attachLinkShaders();
 }
 
@@ -44,14 +55,10 @@ std::string Shader::readFile(const std::string& filePath) {
   return buffer.str();
 }
 
-void Shader::loadShader(GLenum type) {
+void Shader::loadShader(GLenum type, const char* code) {
   bool isVertex = type == GL_VERTEX_SHADER;
-
   unsigned int& shader = (isVertex) ? vertexShader : fragmentShader;
-
-  std::string source = readFile("shaders/" + name + (isVertex ? ".vsh" : ".fsh"));
-  const char* src = source.c_str();
-  glShaderSource(shader, 1, &src, nullptr);
+  glShaderSource(shader, 1, &code, nullptr);
   glCompileShader(shader);
 
   int success;
