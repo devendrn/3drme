@@ -13,8 +13,11 @@ find_package(glm 0.9 REQUIRED)
 
 add_subdirectory(lib/glad)
 add_subdirectory(lib/imgui)
+add_subdirectory(lib/imgui-node-editor)
 include_directories(lib/cereal/include)
 include_directories(lib/imbrowser/include)
+
+add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
@@ -26,17 +29,9 @@ add_executable(${PROJECT_NAME}
   src/projectdata.cpp
 )
 
-file(GLOB_RECURSE SHADER_FILES "src/shaders/*")
-file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/shaders") 
-file(GLOB SHADER_FILES "src/shaders/*")
-foreach(shader_file ${SHADER_FILES})
-    get_filename_component(shader_name ${shader_file} NAME)
-    configure_file(
-        ${shader_file}
-        "${CMAKE_BINARY_DIR}/shaders/${shader_name}"
-        COPYONLY
-    )
-endforeach()
+# FIXME: Use proper directory structure
+install(DIRECTORY assets DESTINATION bin)
+install(FILES src/shaders/*.fsh src/shaders/*.vsh DESTINATION bin/shaders)
 
-target_link_libraries(${PROJECT_NAME} imgui glfw OpenGL::GL glm::glm glad)
+target_link_libraries(${PROJECT_NAME} imgui glfw OpenGL::GL glm::glm glad imgui_node_editor)
 
