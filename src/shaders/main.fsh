@@ -27,6 +27,7 @@ layout(std140, binding = 0) uniform uObjectBlock {
 };
 
 // SDF functions: https://iquilezles.org/articles/distfunctions/
+// Smooth min: https://iquilezles.org/articles/smin/
 
 float sdfSphere(vec3 p) {
   return length(p)-1.0;
@@ -54,8 +55,23 @@ struct Surface {
   float selected;
 };
 
+vec2 smin(float a, float b, float k) {
+  float h = 1.0-min(abs(a-b)/(4.0*k), 1.0);
+  float w = h*h;
+  float m = w*0.5;
+  float s = w*k;
+  return (a < b) ? vec2(a-s,m) : vec2(b-s,1.0-m);
+}
+
 Surface uSurf(Surface a, Surface b) {
   return (a.dist < b.dist) ? a : b;
+}
+
+Surface uSurf(Surface a, Surface b, float k) {
+  vec2 m = smin(a.dist, b.dist, k);
+  a.dist = m.x;
+  a.color = mix(a.color, b.color, m.y);
+  return a;
 }
 
 Surface iSurf(Surface a, Surface b) {

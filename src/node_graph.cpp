@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <string>
 
 #include "imgui_node_editor.h"
 #include "node_graph.hpp"
@@ -82,8 +83,10 @@ void SdfNodeEditor::manageCreation() {
           ed::RejectNewItem(ImColor(1.0f, 0.0f, 0.0f), 2.0f);
         } else if (ed::AcceptNewItem()) {
           // [In  Out]--->[In  Out]
-          if (startPin->Kind != PinKind::Output)
+          if (startPin->Kind != PinKind::Output) {
             std::swap(startPin, endPin);
+            std::swap(startPinId, endPinId);
+          }
 
           int index = -1;
           bool alreadyExists = false;

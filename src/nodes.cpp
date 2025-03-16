@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <imgui.h>
 #include <imgui_node_editor.h>
+#include <string>
 
 #include "nodes.hpp"
 
@@ -225,16 +226,19 @@ std::string SurfaceBooleanNode::generateGlsl() const {
     return result;
 
   std::string func;
-  if (type == BooleanType::Union)
+  std::string end = ")";
+  if (type == BooleanType::Union) {
     func = "uSurf";
-  else if (type == BooleanType::Difference)
+    if (smooth > 0.0)
+      end = "," + std::to_string(smooth) + ")";
+  } else if (type == BooleanType::Difference)
     func = "dSurf";
   else if (type == BooleanType::Intersection)
     func = "iSurf";
 
   auto l = i1.pins.size();
   for (int i = 0; i < l; i++) {
-    result = func + "(" + result + "," + i1.pins[i]->node->generateGlsl() + ")";
+    result = func + "(" + result + "," + i1.pins[i]->node->generateGlsl() + end;
   }
 
   return result;
