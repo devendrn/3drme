@@ -10,9 +10,8 @@
 
 namespace ed = ax::NodeEditor;
 
-enum class NodeType { SurfaceOutput, Vec3Scale, Vec3Translate, Time, SurfaceBox, SurfaceCombine };
 enum class PinType { Vec3, Float, Surface };
-enum class PinKind { Output, Input };
+enum class PinKind { Output, Input, InputMulti };
 
 class Node;
 
@@ -24,10 +23,13 @@ public:
 
   std::string Name;
 
-  Pin* pin;
+  std::vector<Pin*> pins;
   Node* node; // change to &Node ?
 
   Pin(int id, const char* name, PinType type, PinKind kind, Node* node);
+
+  void removeLink(Pin* target);
+  void addLink(Pin* target);
 };
 
 class Node {

@@ -2,6 +2,7 @@
 
 #include "imgui_node_editor.h"
 #include "node_graph.hpp"
+#include "nodes.hpp"
 
 SdfNodeEditor::SdfNodeEditor() {
   ed::Config config;
@@ -20,11 +21,8 @@ void SdfNodeEditor::show() {
   ed::SetCurrentEditor(editor);
   ed::Begin("SDF Node Editor");
 
-  for (auto* node : nodes) {
-    ed::BeginNode(node->ID);
+  for (auto* node : nodes)
     node->draw();
-    ed::EndNode();
-  }
 
   for (auto& link : links)
     ed::Link(link.ID, link.StartPinID, link.EndPinID);
@@ -65,12 +63,9 @@ Pin* SdfNodeEditor::findPin(ed::PinId id) {
   return nullptr;
 }
 
-bool SdfNodeEditor::isInvalidPinLink(Pin* a, Pin* b) { //
-  return (a == b || a->Kind == b->Kind || a->Type != b->Type || a->node == b->node);
-}
-
-bool SdfNodeEditor::linkExists(ed::PinId startID, ed::PinId endID) {
-  return std::any_of(links.begin(), links.end(), [startID, endID](Link& l) { return l.StartPinID == startID && l.EndPinID == endID; });
+bool SdfNodeEditor::isInvalidPinLink(Pin* a, Pin* b) {
+  return a == b || a->Kind == b->Kind || a->Type != b->Type || a->node == b->node || //
+         (a->Kind != PinKind::Output && b->Kind != PinKind::Output);
 }
 
 void SdfNodeEditor::manageCreation() {
@@ -84,15 +79,40 @@ void SdfNodeEditor::manageCreation() {
 
       if (startPin != nullptr && endPin != nullptr) {
         if (isInvalidPinLink(startPin, endPin)) {
-          ed::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+          ed::RejectNewItem(ImColor(1.0f, 0.0f, 0.0f), 2.0f);
         } else if (ed::AcceptNewItem()) {
-          if (endPin->Kind == PinKind::Input)
+          // [In  Out]--->[In  Out]
+          if (startPin->Kind != PinKind::Output)
             std::swap(startPin, endPin);
 
+          int index = -1;
+          bool alreadyExists = false;
+          for (int i = 0; i < links.size(); i++) {
+            if (links[i].EndPinID != endPinId)
+              continue;
+
+            index = i;
+
+            if (links[i].StartPinID == startPinId) {
+              alreadyExists = true;
+              break;
+            }
+
+            if (endPin->Kind == PinKind::Input)
+              break;
+          }
+
           // TODO: Check for feedback loops
-          if (!linkExists(startPinId, endPinId)) {
-            startPin->pin = endPin;
-            endPin->pin = startPin;
+          if (!alreadyExists) {
+            if (index > -1 && endPin->Kind == PinKind::Input) {
+              if (!endPin->pins.empty())
+                endPin->pins[0]->removeLink(endPin);
+              links.erase(links.begin() + index);
+            }
+
+            startPin->pins.push_back(endPin);
+            endPin->pins.push_back(startPin);
+
             links.emplace_back(getNextId(), startPin->ID, endPin->ID);
           }
         }
@@ -117,6 +137,7 @@ void SdfNodeEditor::manageDeletion() {
       }
 
       // delete node
+      // ignore root output node (i=0)
       for (int i = 1; i < nodes.size(); i++) {
         if (nodes[i]->ID == nodeId) {
           delete nodes[i];
@@ -137,9 +158,9 @@ void SdfNodeEditor::manageDeletion() {
           Pin* start = findPin(links[i].StartPinID);
           Pin* end = findPin(links[i].EndPinID);
           if (start != nullptr)
-            start->pin = nullptr;
+            start->removeLink(end);
           if (end != nullptr)
-            end->pin = nullptr;
+            end->removeLink(start);
           links.erase(links.begin() + i);
           break;
         }

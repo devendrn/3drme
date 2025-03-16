@@ -38,7 +38,6 @@ private:
   Node* findNode(ed::NodeId id);
   Pin* findPin(ed::PinId id);
   bool isInvalidPinLink(Pin* a, Pin* b);
-  bool linkExists(ed::PinId startID, ed::PinId endID);
 
   void manageCreation();
   void manageDeletion();
