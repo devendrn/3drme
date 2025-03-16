@@ -7,41 +7,41 @@
 
 /* Constructors */
 
-Pin::Pin(int id, const char* name, PinType type, PinKind kind, Node* node = nullptr) : ID(id), node(node), Name(name), Type(type), Kind(kind) {}
+Pin::Pin(unsigned long id, const char* name, PinType type, PinKind kind, Node* node = nullptr) : ID(id), node(node), Name(name), Type(type), Kind(kind) {}
 
-Node::Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) : ID(id), name(name), color(color), size(0, 0) {}
+Node::Node(unsigned long id, NodeType type, const char* name, ImColor color = ImColor(255, 255, 255)) : ID(id), type(type), name(name), color(color), size(0, 0) {}
 
-SurfaceOutputNode::SurfaceOutputNode(int id) : Node(id, "Surface Output", ImColor(200, 100, 100)) { // :) ill protect this from getting inlined by clang-format
+SurfaceOutputNode::SurfaceOutputNode(unsigned long id) : Node(id, NodeType::SurfaceOutput, "Surface Output", ImColor(200, 100, 100)) { // :) ill protect this from getting inlined by clang-format
   inputs.emplace_back(id * 10 + 1, "", PinType::Surface, PinKind::Input, this);
 }
 
-SurfaceBooleanNode::SurfaceBooleanNode(int id) : Node(id, "Surface Boolean", ImColor(100, 150, 200)) {
+SurfaceBooleanNode::SurfaceBooleanNode(unsigned long id) : Node(id, NodeType::SurfaceBoolean, "Surface Boolean", ImColor(100, 150, 200)) {
   inputs.emplace_back(id * 10 + 1, "Input A", PinType::Surface, PinKind::Input, this);
   inputs.emplace_back(id * 10 + 2, "Input B,C...", PinType::Surface, PinKind::InputMulti, this);
   outputs.emplace_back(id * 10 + 3, "Output", PinType::Surface, PinKind::Output, this);
 }
 
-SurfaceCreateBoxNode::SurfaceCreateBoxNode(int id) : Node(id, "Surface Box", ImColor(100, 200, 100)) {
+SurfaceCreateBoxNode::SurfaceCreateBoxNode(unsigned long id) : Node(id, NodeType::SurfaceCreateBox, "Surface Box", ImColor(100, 200, 100)) {
   inputs.emplace_back(id * 10 + 1, "Color", PinType::Vec3, PinKind::Input, this);
   inputs.emplace_back(id * 10 + 2, "Postion", PinType::Vec3, PinKind::Input, this);
   outputs.emplace_back(id * 10 + 3, "", PinType::Surface, PinKind::Output, this);
 }
 
-Vec3TranslateNode::Vec3TranslateNode(int id) : Node(id, "Vec3 Translate", ImColor(200, 100, 100)) {
+Vec3TranslateNode::Vec3TranslateNode(unsigned long id) : Node(id, NodeType::Vec3Translate, "Vec3 Translate", ImColor(200, 100, 100)) {
   inputs.emplace_back(id * 10 + 1, "Input", PinType::Vec3, PinKind::Input, this);
   outputs.emplace_back(id * 10 + 2, "Output", PinType::Vec3, PinKind::Output, this);
 }
 
-Vec3ScaleNode::Vec3ScaleNode(int id) : Node(id, "Vec3 Scale", ImColor(200, 100, 100)) {
+Vec3ScaleNode::Vec3ScaleNode(unsigned long id) : Node(id, NodeType::Vec3Scale, "Vec3 Scale", ImColor(200, 100, 100)) {
   inputs.emplace_back(id * 10 + 1, "Input", PinType::Vec3, PinKind::Input, this);
   outputs.emplace_back(id * 10 + 2, "Output", PinType::Vec3, PinKind::Output, this);
 }
 
-InputPosNode::InputPosNode(int id) : Node(id, "Position", ImColor(200, 100, 100)) { //
+InputPosNode::InputPosNode(unsigned long id) : Node(id, NodeType::InputPosition, "Position", ImColor(200, 100, 100)) { //
   outputs.emplace_back(id * 10 + 1, "", PinType::Vec3, PinKind::Output, this);
 }
 
-InputTimeNode::InputTimeNode(int id) : Node(id, "Time", ImColor(200, 100, 100)) { //
+InputTimeNode::InputTimeNode(unsigned long id) : Node(id, NodeType::InputTime, "Time", ImColor(200, 100, 100)) { //
   outputs.emplace_back(id * 10 + 1, "", PinType::Float, PinKind::Output, this);
 }
 

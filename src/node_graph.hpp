@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include <cereal/types/vector.hpp>
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <imgui_node_editor.h>
@@ -11,6 +12,26 @@
 #include "nodes.hpp"
 
 namespace ed = ax::NodeEditor;
+
+struct SerializableNode {
+  unsigned long ID;
+  NodeType type;
+  float px, py;
+  template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py); }
+};
+
+struct SerializableLink {
+  unsigned long ID, startPinID, endPinID;
+  template <class Archive> void serialize(Archive& archive) { archive(ID, startPinID, endPinID); }
+};
+
+struct SerializableGraph {
+  std::vector<SerializableNode> nodes;
+  std::vector<SerializableLink> links;
+  template <class Archive> void serialize(Archive& archive) { archive(nodes, links); }
+};
+
+// FIXME: Id generation for pins, nodes, links
 
 class SdfNodeEditor {
 public:
@@ -23,6 +44,9 @@ public:
 
   std::string generateGlslCode() const;
 
+  void saveGraph(SerializableGraph& graph);
+  void loadGraph(SerializableGraph& graph);
+
 private:
   std::vector<Node*> nodes;
   std::vector<Link> links;
@@ -31,9 +55,9 @@ private:
 
   Node* output;
 
-  int nextId = 1;
+  unsigned long nextId = 1;
 
-  int getNextId();
+  unsigned long getNextId();
 
   Node* findNode(ed::NodeId id);
   Pin* findPin(ed::PinId id);
@@ -41,6 +65,8 @@ private:
 
   void manageCreation();
   void manageDeletion();
+
+  Node* createNode(unsigned long id, NodeType type);
 };
 
 // FIXME: Move elsewhere

@@ -10,6 +10,16 @@
 
 namespace ed = ax::NodeEditor;
 
+enum class NodeType { //
+  SurfaceCreateBox,
+  SurfaceBoolean,
+  SurfaceOutput,
+  Vec3Translate,
+  Vec3Scale,
+  InputTime,
+  InputPosition
+};
+
 enum class PinType { Vec3, Float, Surface };
 enum class PinKind { Output, Input, InputMulti };
 
@@ -26,7 +36,7 @@ public:
   std::vector<Pin*> pins;
   Node* node; // change to &Node ?
 
-  Pin(int id, const char* name, PinType type, PinKind kind, Node* node);
+  Pin(unsigned long id, const char* name, PinType type, PinKind kind, Node* node);
 
   void removeLink(Pin* target);
   void addLink(Pin* target);
@@ -35,16 +45,16 @@ public:
 class Node {
 public:
   ed::NodeId ID;
+  NodeType type;
 
   ImColor color;
   ImVec2 size;
 
   std::string name;
 
-  std::vector<Pin> inputs;
-  std::vector<Pin> outputs;
+  std::vector<Pin> inputs, outputs;
 
-  Node(int id, const char* name, ImColor color);
+  Node(unsigned long id, NodeType type, const char* name, ImColor color);
   ~Node();
 
   virtual void draw();
@@ -54,8 +64,7 @@ public:
 
 struct Link {
   ed::LinkId ID;
-  ed::PinId StartPinID;
-  ed::PinId EndPinID;
+  ed::PinId StartPinID, EndPinID;
 
   Link(ed::LinkId id, ed::PinId startPinId, ed::PinId endPinId) : ID(id), StartPinID(startPinId), EndPinID(endPinId) {}
 };
@@ -64,14 +73,14 @@ struct Link {
 
 class SurfaceOutputNode : public Node {
 public:
-  SurfaceOutputNode(int id);
+  SurfaceOutputNode(unsigned long id);
   void drawContent() override;
   std::string generateGlsl() const override;
 };
 
 class SurfaceBooleanNode : public Node {
 public:
-  SurfaceBooleanNode(int id);
+  SurfaceBooleanNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 
@@ -84,7 +93,7 @@ private:
 
 class SurfaceCreateBoxNode : public Node {
 public:
-  SurfaceCreateBoxNode(int id);
+  SurfaceCreateBoxNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 
@@ -96,7 +105,7 @@ private:
 
 class Vec3TranslateNode : public Node {
 public:
-  Vec3TranslateNode(int id);
+  Vec3TranslateNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 
@@ -106,7 +115,7 @@ private:
 
 class Vec3ScaleNode : public Node {
 public:
-  Vec3ScaleNode(int id);
+  Vec3ScaleNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 
@@ -118,14 +127,14 @@ private:
 
 class InputPosNode : public Node {
 public:
-  InputPosNode(int id);
+  InputPosNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 };
 
 class InputTimeNode : public Node {
 public:
-  InputTimeNode(int id);
+  InputTimeNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 };

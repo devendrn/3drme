@@ -155,7 +155,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
       if ((io.KeyShift || !pd.hasLoadedProjectFile())) {
         saveFileDialog.Open();
       } else {
-        pd.saveProjectFile(scene, viewport);
+        pd.saveProjectFile(scene, viewport, sdfNodeEditor);
       }
     } else if (ImGui::IsKeyPressed(ImGuiKey_O)) {
       loadFileDialog.Open();
@@ -185,7 +185,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           loadFileDialog.Open();
         }
         if (ImGui::MenuItem("Save", "Ctrl+S", false, pd.hasLoadedProjectFile())) {
-          pd.saveProjectFile(scene, viewport);
+          pd.saveProjectFile(scene, viewport, sdfNodeEditor);
         }
         if (ImGui::MenuItem("Save as", "Ctrl+Shift+S")) {
           saveFileDialog.Open();
@@ -211,13 +211,13 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
 
       if (loadFileDialog.HasSelected()) {
         std::string path = loadFileDialog.GetSelected();
-        pd.loadProjectFile(scene, viewport, path);
+        pd.loadProjectFile(scene, viewport, sdfNodeEditor, path);
         updateWindowTitle(window, path);
         loadFileDialog.ClearSelected();
       }
       if (saveFileDialog.HasSelected()) {
         std::string path = saveFileDialog.GetSelected();
-        pd.saveProjectFile(scene, viewport, saveFileDialog.GetSelected());
+        pd.saveProjectFile(scene, viewport, sdfNodeEditor, saveFileDialog.GetSelected());
         updateWindowTitle(window, path);
         saveFileDialog.ClearSelected();
       }

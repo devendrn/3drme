@@ -36,7 +36,7 @@ void SdfNodeEditor::show() {
 
 std::string SdfNodeEditor::generateGlslCode() const { return output->generateGlsl(); }
 
-int SdfNodeEditor::getNextId() { return nextId++; }
+unsigned long SdfNodeEditor::getNextId() { return nextId++; }
 
 Node* SdfNodeEditor::findNode(ed::NodeId id) {
   for (auto& node : nodes) {
@@ -172,3 +172,74 @@ void SdfNodeEditor::manageDeletion() {
   }
   ed::EndDelete();
 }
+
+Node* SdfNodeEditor::createNode(unsigned long id, NodeType type) {
+  switch (type) {
+  case NodeType::InputPosition:
+    return new InputPosNode(id);
+  case NodeType::InputTime:
+    return new InputTimeNode(id);
+  case NodeType::Vec3Scale:
+    return new Vec3ScaleNode(id);
+  case NodeType::Vec3Translate:
+    return new Vec3TranslateNode(id);
+  case NodeType::SurfaceBoolean:
+    return new SurfaceBooleanNode(id);
+  case NodeType::SurfaceCreateBox:
+    return new SurfaceCreateBoxNode(id);
+  case NodeType::SurfaceOutput:
+    return new SurfaceOutputNode(id);
+  default:
+    return nullptr;
+  }
+}
+
+void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
+  for (auto* node : nodes) {
+    auto p = ed::GetNodePosition(node->ID);
+    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y};
+    graph.nodes.push_back(sNode);
+  }
+  for (auto& link : links) {
+    SerializableLink sLink{link.ID.Get(), link.StartPinID.Get(), link.EndPinID.Get()};
+    graph.links.push_back(sLink);
+  }
+};
+
+void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
+  for (Node* node : nodes)
+    delete node;
+
+  nodes.clear();
+  links.clear();
+  nextId = 2;
+
+  for (auto& serializableNode : graph.nodes) {
+    Node* newNode = createNode(serializableNode.ID, serializableNode.type);
+    if (newNode == nullptr) {
+      std::cerr << "Error: Unknown node type: " << static_cast<int>(serializableNode.type) << "\n";
+      delete newNode;
+      continue;
+    }
+
+    nodes.push_back(newNode);
+    ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
+    nextId = serializableNode.ID + 1;
+  }
+
+  for (auto& serializableLink : graph.links) {
+    Pin* startPin = findPin(serializableLink.startPinID);
+    Pin* endPin = findPin(serializableLink.endPinID);
+
+    if (startPin == nullptr || endPin == nullptr) {
+      std::cerr << "Error: Invalid link ids found\n";
+      continue;
+    }
+
+    startPin->pins.push_back(endPin);
+    endPin->pins.push_back(startPin);
+
+    links.emplace_back(serializableLink.ID, serializableLink.startPinID, serializableLink.endPinID);
+    nextId = serializableLink.ID + 1;
+  }
+};

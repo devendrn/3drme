@@ -9,13 +9,13 @@
 
 #include "camera.hpp"
 #include "projectdata.hpp"
+#include "node_graph.hpp"
 #include "scene.hpp"
+#include "utils/cereal_glm.hpp"
 #include "viewport.hpp"
 
 namespace cereal {
 
-template <class Archive> void serialize(Archive& archive, glm::vec3& d) { archive(d.x, d.y, d.z); };
-template <class Archive> void serialize(Archive& archive, glm::vec4& d) { archive(d.x, d.y, d.z, d.w); };
 template <class Archive> void serialize(Archive& archive, Object& d) { archive(d.id, d.name, d.type, d.matId, d.mode, d.position, d.rotation, d.scale, d.extra); };
 template <class Archive> void serialize(Archive& archive, Material& d) { archive(d.color); }
 template <class Archive> void serialize(Archive& archive, Scene& d) { archive(d.sceneTree, d.materials); }
@@ -28,15 +28,18 @@ ProjectData::ProjectData() { nodeEditorContext = ax::NodeEditor::CreateEditor();
 
 ProjectData::~ProjectData() { ax::NodeEditor::DestroyEditor(nodeEditorContext); }
 
-void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, const std::string& filepath) {
+void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath) {
   std::ofstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file for writing: " << filepath << std::endl;
     return;
   }
 
+  SerializableGraph graph;
+  sdfnodeeditor.saveGraph(graph);
+
   cereal::PortableBinaryOutputArchive oarchive(file);
-  oarchive(scene, viewport);
+  oarchive(scene, viewport, graph);
 
   file.close();
   std::cout << "[Project] Saved to " << filepath << std::endl;
@@ -45,21 +48,25 @@ void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, const std::s
   loadedFilePath = filepath;
 }
 
-void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport) {
+void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor) {
   if (!loadedFile)
     return;
-  saveProjectFile(scene, viewport, loadedFilePath);
+  saveProjectFile(scene, viewport, sdfnodeeditor, loadedFilePath);
 }
 
-void ProjectData::loadProjectFile(Scene& scene, Viewport& viewport, const std::string& filepath) {
+void ProjectData::loadProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath) {
   std::ifstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file for reading: " << filepath << std::endl;
     return;
   }
 
+  SerializableGraph graph;
+
   cereal::PortableBinaryInputArchive oarchive(file);
-  oarchive(scene, viewport);
+  oarchive(scene, viewport, graph);
+
+  sdfnodeeditor.loadGraph(graph);
 
   file.close();
   std::cout << "[Project] Loaded " << filepath << std::endl;
