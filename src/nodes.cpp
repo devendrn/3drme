@@ -14,9 +14,10 @@ SurfaceOutputNode::SurfaceOutputNode(int id) : Node(id, "Surface Output", ImColo
   inputs.emplace_back(id * 10 + 1, "", PinType::Surface, PinKind::Input, this);
 }
 
-SurfaceCombineNode::SurfaceCombineNode(int id) : Node(id, "Surface Combine", ImColor(100, 150, 200)) {
-  inputs.emplace_back(id * 10 + 1, "Inputs", PinType::Surface, PinKind::InputMulti, this);
-  outputs.emplace_back(id * 10 + 2, "Output", PinType::Surface, PinKind::Output, this);
+SurfaceBooleanNode::SurfaceBooleanNode(int id) : Node(id, "Surface Boolean", ImColor(100, 150, 200)) {
+  inputs.emplace_back(id * 10 + 1, "Input A", PinType::Surface, PinKind::Input, this);
+  inputs.emplace_back(id * 10 + 2, "Input B,C...", PinType::Surface, PinKind::InputMulti, this);
+  outputs.emplace_back(id * 10 + 3, "Output", PinType::Surface, PinKind::Output, this);
 }
 
 SurfaceCreateBoxNode::SurfaceCreateBoxNode(int id) : Node(id, "Surface Box", ImColor(100, 200, 100)) {
@@ -73,7 +74,7 @@ void Node::draw() {
   {
     // TODO: Header color, centering
     ImGui::PushID(&ID);
-    ImGui::PushItemWidth(60.0f);
+    ImGui::PushItemWidth(102);
 
     ImGui::Text("%s", name.c_str());
     drawContent();
@@ -131,12 +132,27 @@ void SurfaceOutputNode::drawContent() {
   drawBaseInput(i0);
 }
 
-void SurfaceCombineNode::drawContent() {
+void SurfaceBooleanNode::drawContent() {
   Pin& o0 = outputs[0];
   drawBaseOutput(o0);
 
+  ImVec2 size = ImVec2(10, 14);
+  ImGui::Dummy(ImVec2(20, 5));
+  ImGui::SameLine();
+  if (ImGui::Selectable("U", type == BooleanType::Union, 0, size))
+    type = BooleanType::Union;
+  ImGui::SameLine();
+  if (ImGui::Selectable("D", type == BooleanType::Difference, 0, size))
+    type = BooleanType::Difference;
+  ImGui::SameLine();
+  if (ImGui::Selectable("I", type == BooleanType::Intersection, 0, size))
+    type = BooleanType::Intersection;
+  ImGui::DragFloat("##smooth", &smooth, 0.01f, 0.0, 1.0f);
+
   Pin& i0 = inputs[0];
+  Pin& i1 = inputs[1];
   drawBaseInput(i0);
+  drawBaseInput(i1);
 }
 
 void SurfaceCreateBoxNode::drawContent() {
@@ -153,9 +169,9 @@ void Vec3TranslateNode::drawContent() {
   Pin& o0 = outputs[0];
   drawBaseOutput(o0);
 
-  ImGui::DragFloat("X", &val.x);
-  ImGui::DragFloat("Y", &val.y);
-  ImGui::DragFloat("Z", &val.z);
+  ImGui::DragFloat("##x", &val.x);
+  ImGui::DragFloat("##y", &val.y);
+  ImGui::DragFloat("##z", &val.z);
 
   Pin& i0 = inputs[0];
   drawBaseInput(i0);
@@ -165,9 +181,9 @@ void Vec3ScaleNode::drawContent() {
   Pin& o0 = outputs[0];
   drawBaseOutput(o0);
 
-  ImGui::DragFloat("X", &val.x);
-  ImGui::DragFloat("Y", &val.y);
-  ImGui::DragFloat("Z", &val.z);
+  ImGui::DragFloat("##x", &val.x);
+  ImGui::DragFloat("##y", &val.y);
+  ImGui::DragFloat("##z", &val.z);
 
   Pin& i0 = inputs[0];
   drawBaseInput(i0);
@@ -197,20 +213,28 @@ std::string SurfaceOutputNode::generateGlsl() const {
   return "";
 }
 
-std::string SurfaceCombineNode::generateGlsl() const {
-  const Pin& in = inputs[0];
-  if (in.pins.empty())
+std::string SurfaceBooleanNode::generateGlsl() const {
+  const Pin& i0 = inputs[0];
+  const Pin& i1 = inputs[1];
+  if (i0.pins.empty())
     return surfaceDefault;
 
-  auto l = in.pins.size();
+  std::string result = i0.pins[0]->node->generateGlsl();
 
-  std::string result = in.pins[0]->node->generateGlsl();
-
-  if (l == 1)
+  if (i1.pins.empty())
     return result;
 
-  for (int i = 1; i < l; i++) {
-    result = "minSurf(" + result + "," + in.pins[i]->node->generateGlsl() + ")";
+  std::string func;
+  if (type == BooleanType::Union)
+    func = "uSurf";
+  else if (type == BooleanType::Difference)
+    func = "dSurf";
+  else if (type == BooleanType::Intersection)
+    func = "iSurf";
+
+  auto l = i1.pins.size();
+  for (int i = 0; i < l; i++) {
+    result = func + "(" + result + "," + i1.pins[i]->node->generateGlsl() + ")";
   }
 
   return result;

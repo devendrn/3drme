@@ -335,10 +335,10 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           if (ImGui::BeginMenu("Surface")) {
             if (ImGui::MenuItem("Box"))
               sdfNodeEditor.addNode<SurfaceCreateBoxNode>();
-            if (ImGui::MenuItem("Combine"))
-              sdfNodeEditor.addNode<SurfaceCombineNode>();
-            if (ImGui::MenuItem("Output"))
-              sdfNodeEditor.addNode<SurfaceOutputNode>();
+            if (ImGui::MenuItem("Boolean"))
+              sdfNodeEditor.addNode<SurfaceBooleanNode>();
+            // if (ImGui::MenuItem("Output"))
+            //   sdfNodeEditor.addNode<SurfaceOutputNode>();
             ImGui::EndMenu();
           }
           if (ImGui::BeginMenu("Vec3")) {
@@ -366,7 +366,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           auto line = code.find("// !sdf_inline");
           code.insert(line, glslCode);
 
-          std::cout << "[Node editor] Inline shader code: \n"<< glslCode << "\n";
+          std::cout << "[Node editor] Inline shader code: \n" << glslCode << "\n";
           viewport.shader.reloadFragment();
         }
       }

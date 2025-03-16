@@ -54,8 +54,17 @@ struct Surface {
   float selected;
 };
 
-Surface minSurf(Surface a, Surface b) {
+Surface uSurf(Surface a, Surface b) {
   return (a.dist < b.dist) ? a : b;
+}
+
+Surface iSurf(Surface a, Surface b) {
+  return (a.dist > b.dist) ? a : b;
+}
+
+Surface dSurf(Surface a, Surface b) {
+  b.dist = -b.dist;
+  return (a.dist > b.dist) ? a : b;
 }
 
 // TODO: Find a better place to do transformations
@@ -92,9 +101,9 @@ Surface sceneSdfSurf(vec3 p)  {
     vec3 q = applyTransform(p, obj.transformation); // This is expensive
     float dist = sdfShape(q, obj.typeMatId.x);
     vec3 col = obj.typeMatId.x > 0 ? vec3(1.0, 0.0, 0.0) : vec3(1.0); // TODO: Implement materials
-    s = minSurf(s, Surface(dist, col, float(obj.typeMatId.z)));
+    s = uSurf(s, Surface(dist, col, float(obj.typeMatId.z)));
   }
-  s = minSurf(s, nodeEditorSdf(p, uTime));
+  s = uSurf(s, nodeEditorSdf(p, uTime));
   return s;
 }
 

@@ -69,11 +69,17 @@ public:
   std::string generateGlsl() const override;
 };
 
-class SurfaceCombineNode : public Node {
+class SurfaceBooleanNode : public Node {
 public:
-  SurfaceCombineNode(int id);
+  SurfaceBooleanNode(int id);
   std::string generateGlsl() const override;
   void drawContent() override;
+
+private:
+  enum class BooleanType { Union, Intersection, Difference };
+
+  float smooth = 0.0f;
+  BooleanType type = BooleanType::Union;
 };
 
 class SurfaceCreateBoxNode : public Node {
@@ -95,7 +101,7 @@ public:
   void drawContent() override;
 
 private:
-  glm::vec3 val;
+  glm::vec3 val = glm::vec3(0.0f);
 };
 
 class Vec3ScaleNode : public Node {
@@ -105,7 +111,7 @@ public:
   void drawContent() override;
 
 private:
-  glm::vec3 val;
+  glm::vec3 val = glm::vec3(0.0f);
 };
 
 /* Input Nodes */
