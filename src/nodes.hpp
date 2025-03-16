@@ -60,6 +60,8 @@ public:
   virtual void draw();
   virtual void drawContent() {};
   virtual std::string generateGlsl() const;
+
+  bool isAncestor(Node* target) const;
 };
 
 struct Link {

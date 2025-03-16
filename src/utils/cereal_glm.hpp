@@ -1,7 +1,3 @@
-#include <cereal/archives/portable_binary.hpp>
-#include <cereal/types/map.hpp>
-#include <cereal/types/string.hpp>
-#include <cereal/types/vector.hpp>
 #include <glm/glm.hpp>
 
 namespace cereal {

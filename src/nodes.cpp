@@ -1,7 +1,8 @@
 #include <algorithm>
+#include <string>
+
 #include <imgui.h>
 #include <imgui_node_editor.h>
-#include <string>
 
 #include "nodes.hpp"
 
@@ -62,11 +63,24 @@ Node::~Node() {
 
 void Pin::removeLink(Pin* target) {
   auto index = std::find(pins.begin(), pins.end(), target);
-  if (index != pins.end())
-    pins.erase(index);
+  pins.erase(index);
 }
 
 void Pin::addLink(Pin* target) { pins.push_back(target); }
+
+bool Node::isAncestor(Node* target) const {
+  if (this == target)
+    return true;
+
+  for (const auto& pin : this->inputs) {
+    for (const auto& p : pin.pins) {
+      if (p->node->isAncestor(target))
+        return true;
+    }
+  }
+
+  return false;
+}
 
 /* UI builders */
 

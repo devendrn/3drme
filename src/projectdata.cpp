@@ -8,8 +8,8 @@
 #include <glm/fwd.hpp>
 
 #include "camera.hpp"
-#include "projectdata.hpp"
 #include "node_graph.hpp"
+#include "projectdata.hpp"
 #include "scene.hpp"
 #include "utils/cereal_glm.hpp"
 #include "viewport.hpp"

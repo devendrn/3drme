@@ -1,7 +1,9 @@
 #include <algorithm>
+#include <iostream>
 #include <string>
 
-#include "imgui_node_editor.h"
+#include <imgui_node_editor.h>
+
 #include "node_graph.hpp"
 #include "nodes.hpp"
 
@@ -105,11 +107,12 @@ void SdfNodeEditor::manageCreation() {
               break;
           }
 
-          // TODO: Check for feedback loops
-          if (!alreadyExists) {
+          if (!alreadyExists && !startPin->node->isAncestor(endPin->node)) {
             if (index > -1 && endPin->Kind == PinKind::Input) {
-              if (!endPin->pins.empty())
+              if (!endPin->pins.empty()) {
                 endPin->pins[0]->removeLink(endPin);
+              }
+              endPin->pins.clear();
               links.erase(links.begin() + index);
             }
 
@@ -225,6 +228,9 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     nodes.push_back(newNode);
     ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
     nextId = serializableNode.ID + 1;
+
+    if (newNode->type == NodeType::SurfaceOutput)
+      output = newNode;
   }
 
   for (auto& serializableLink : graph.links) {
