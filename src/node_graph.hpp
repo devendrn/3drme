@@ -1,7 +1,9 @@
 #ifndef NODE_GRAPH_H
 #define NODE_GRAPH_H
 
+#include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <cereal/types/vector.hpp>
@@ -40,7 +42,7 @@ public:
 
   void show();
 
-  template <typename NodeType> void addNode() { nodes.push_back(new NodeType(getNextId())); }
+  template <typename NodeType> void addNode() { nodes.push_back(std::make_unique<NodeType>(getNextId())); }
 
   std::string generateGlslCode() const;
 
@@ -48,7 +50,7 @@ public:
   void loadGraph(SerializableGraph& graph);
 
 private:
-  std::vector<Node*> nodes;
+  std::vector<std::unique_ptr<Node>> nodes;
   std::vector<Link> links;
 
   ed::EditorContext* editor = nullptr;
@@ -59,14 +61,14 @@ private:
 
   unsigned long getNextId();
 
-  Node* findNode(ed::NodeId id);
-  Pin* findPin(ed::PinId id);
-  bool isInvalidPinLink(Pin* a, Pin* b);
+  Node* findNode(ed::NodeId id) const;
+  Pin* findPin(ed::PinId id) const;
+  bool isInvalidPinLink(Pin* a, Pin* b) const;
 
   void manageCreation();
   void manageDeletion();
 
-  Node* createNode(unsigned long id, NodeType type);
+  std::unique_ptr<Node> createNode(unsigned long id, NodeType type);
 };
 
 // FIXME: Move elsewhere
