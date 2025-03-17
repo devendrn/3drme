@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include <imgui_node_editor.h>
@@ -10,7 +11,7 @@
 SdfNodeEditor::SdfNodeEditor() {
   ed::Config config;
   editor = ed::CreateEditor(&config);
-  nodes.push_back(std::make_unique<SurfaceOutputNode>(nextId++));
+  addNode<SurfaceOutputNode>();
   output = nodes.back().get();
 }
 
@@ -33,8 +34,6 @@ void SdfNodeEditor::show() {
 }
 
 std::string SdfNodeEditor::generateGlslCode() const { return output->generateGlsl(); }
-
-unsigned long SdfNodeEditor::getNextId() { return nextId++; }
 
 Node* SdfNodeEditor::findNode(ed::NodeId id) const {
   for (const auto& node : nodes) {
@@ -115,7 +114,7 @@ void SdfNodeEditor::manageCreation() {
             startPin->pins.push_back(endPin);
             endPin->pins.push_back(startPin);
 
-            links.emplace_back(getNextId(), startPin->ID, endPin->ID);
+            links.emplace_back(nextId++, startPin->ID, endPin->ID);
           }
         }
       }
@@ -197,19 +196,19 @@ std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type)
 void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
   for (auto& node : nodes) {
     auto p = ed::GetNodePosition(node->ID);
-    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y, getNodeData(node.get())};
-    graph.nodes.push_back(sNode);
+    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y, node->getData()};
+    graph.nodes.emplace_back(sNode);
   }
   for (auto& link : links) {
     SerializableLink sLink{link.ID.Get(), link.StartPinID.Get(), link.EndPinID.Get()};
-    graph.links.push_back(sLink);
+    graph.links.emplace_back(sLink);
   }
 };
 
 void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
   nodes.clear();
   links.clear();
-  nextId = 2;
+  nextId = 1;
 
   for (auto& serializableNode : graph.nodes) {
     std::unique_ptr<Node> newNode = createNode(serializableNode.ID, serializableNode.type);
@@ -217,17 +216,10 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
       std::cerr << "Error: Unknown node type: " << static_cast<int>(serializableNode.type) << "\n";
       continue;
     }
-
-    auto tmpid = std::move(newNode->ID);
-    auto tmpinputs = std::move(newNode->inputs);
-    auto tmpoutputs = std::move(newNode->outputs);
-    setNodeData(newNode.get(), serializableNode.data); // uses data with id=0!!
-    newNode->ID = std::move(tmpid);
-    newNode->inputs = std::move(tmpinputs);
-    newNode->outputs = std::move(tmpoutputs);
+    newNode->setData(serializableNode.data);
+    ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));
-    ed::SetNodePosition(nodes.back()->ID, ImVec2(serializableNode.px, serializableNode.py));
     nextId = serializableNode.ID + 1;
 
     if (nodes.back()->type == NodeType::SurfaceOutput)
@@ -250,28 +242,3 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     nextId = serializableLink.ID + 1;
   }
 };
-
-NodeData SdfNodeEditor::getNodeData(const Node* node) const {
-  if (const auto* typedNode = dynamic_cast<const Vec3ScaleNode*>(node))
-    return *typedNode;
-  if (const auto* typedNode = dynamic_cast<const Vec3TranslateNode*>(node))
-    return *typedNode;
-  if (const auto* typedNode = dynamic_cast<const SurfaceBooleanNode*>(node))
-    return *typedNode;
-  if (const auto* typedNode = dynamic_cast<const SurfaceCreateBoxNode*>(node))
-    return *typedNode;
-  return std::monostate{}; // case for nodes with no data
-}
-
-void SdfNodeEditor::setNodeData(Node* node, const NodeData& data) {
-  std::visit(
-      [node](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (!std::is_same_v<T, std::monostate>) {
-          if (auto* typedNode = dynamic_cast<T*>(node)) {
-            *typedNode = arg;
-          }
-        }
-      },
-      data);
-}

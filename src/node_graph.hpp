@@ -3,10 +3,8 @@
 
 #include <memory>
 #include <string>
-#include <variant>
 #include <vector>
 
-#include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
 #include <glm/glm.hpp>
 #include <imgui.h>
@@ -16,17 +14,11 @@
 
 namespace ed = ax::NodeEditor;
 
-using NodeData = std::variant<               //
-    std::monostate,                          //
-    Vec3ScaleNode, Vec3TranslateNode,        //
-    SurfaceBooleanNode, SurfaceCreateBoxNode //
-    >;
-
 struct SerializableNode {
   unsigned long ID;
   NodeType type;
   float px, py;
-  NodeData data;
+  std::vector<float> data;
   template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py, data); }
 };
 
@@ -41,8 +33,6 @@ struct SerializableGraph {
   template <class Archive> void serialize(Archive& archive) { archive(nodes, links); }
 };
 
-// FIXME: Id generation for pins, nodes, links
-
 class SdfNodeEditor {
 public:
   SdfNodeEditor();
@@ -50,7 +40,10 @@ public:
 
   void show();
 
-  template <typename NodeType> void addNode() { nodes.push_back(std::make_unique<NodeType>(getNextId())); }
+  template <typename NodeType> void addNode() {
+    nodes.push_back(std::make_unique<NodeType>(nextId++));
+    nextId += nodes.back()->getPinCount();
+  }
 
   std::string generateGlslCode() const;
 
@@ -67,8 +60,6 @@ private:
 
   unsigned long nextId = 1;
 
-  unsigned long getNextId();
-
   Node* findNode(ed::NodeId id) const;
   Pin* findPin(ed::PinId id) const;
   bool isInvalidPinLink(Pin* a, Pin* b) const;
@@ -77,12 +68,6 @@ private:
   void manageDeletion();
 
   std::unique_ptr<Node> createNode(unsigned long id, NodeType type);
-
-  NodeData getNodeData(const Node* node) const;
-  void setNodeData(Node* node, const NodeData& data);
 };
-
-// FIXME: Move elsewhere
-static SdfNodeEditor sdfNodeEditor;
 
 #endif

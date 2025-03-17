@@ -1,53 +1,23 @@
 #include <algorithm>
 #include <string>
 
-#include <cereal/types/polymorphic.hpp>
 #include <imgui.h>
 #include <imgui_node_editor.h>
 
 #include "nodes.hpp"
 
-/* Constructors */
+/* Base classes */
 
 Pin::Pin(unsigned long id, const char* name, PinType type, PinKind kind, Node* node = nullptr) : ID(id), node(node), Name(name), Type(type), Kind(kind) {}
 
+void Pin::removeLink(Pin* target) {
+  auto index = std::find(pins.begin(), pins.end(), target);
+  pins.erase(index);
+}
+
+void Pin::addLink(Pin* target) { pins.push_back(target); }
+
 Node::Node(unsigned long id, NodeType type, const char* name, ImColor color = ImColor(255, 255, 255)) : ID(id), type(type), name(name), color(color), size(0, 0) {}
-
-SurfaceOutputNode::SurfaceOutputNode(unsigned long id) : Node(id, NodeType::SurfaceOutput, "Surface Output", ImColor(200, 100, 100)) { // :) ill protect this from getting inlined by clang-format
-  inputs.emplace_back(id * 10 + 1, "", PinType::Surface, PinKind::Input, this);
-}
-
-SurfaceBooleanNode::SurfaceBooleanNode(unsigned long id) : Node(id, NodeType::SurfaceBoolean, "Surface Boolean", ImColor(100, 150, 200)) {
-  inputs.emplace_back(id * 10 + 1, "Input A", PinType::Surface, PinKind::Input, this);
-  inputs.emplace_back(id * 10 + 2, "Input B,C...", PinType::Surface, PinKind::InputMulti, this);
-  outputs.emplace_back(id * 10 + 3, "Output", PinType::Surface, PinKind::Output, this);
-}
-
-SurfaceCreateBoxNode::SurfaceCreateBoxNode(unsigned long id) : Node(id, NodeType::SurfaceCreateBox, "Surface Box", ImColor(100, 200, 100)) {
-  inputs.emplace_back(id * 10 + 1, "Color", PinType::Vec3, PinKind::Input, this);
-  inputs.emplace_back(id * 10 + 2, "Postion", PinType::Vec3, PinKind::Input, this);
-  outputs.emplace_back(id * 10 + 3, "", PinType::Surface, PinKind::Output, this);
-}
-
-Vec3TranslateNode::Vec3TranslateNode(unsigned long id) : Node(id, NodeType::Vec3Translate, "Vec3 Translate", ImColor(200, 100, 100)) {
-  inputs.emplace_back(id * 10 + 1, "Input", PinType::Vec3, PinKind::Input, this);
-  outputs.emplace_back(id * 10 + 2, "Output", PinType::Vec3, PinKind::Output, this);
-}
-
-Vec3ScaleNode::Vec3ScaleNode(unsigned long id) : Node(id, NodeType::Vec3Scale, "Vec3 Scale", ImColor(200, 100, 100)) {
-  inputs.emplace_back(id * 10 + 1, "Input", PinType::Vec3, PinKind::Input, this);
-  outputs.emplace_back(id * 10 + 2, "Output", PinType::Vec3, PinKind::Output, this);
-}
-
-InputPosNode::InputPosNode(unsigned long id) : Node(id, NodeType::InputPosition, "Position", ImColor(200, 100, 100)) { //
-  outputs.emplace_back(id * 10 + 1, "", PinType::Vec3, PinKind::Output, this);
-}
-
-InputTimeNode::InputTimeNode(unsigned long id) : Node(id, NodeType::InputTime, "Time", ImColor(200, 100, 100)) { //
-  outputs.emplace_back(id * 10 + 1, "", PinType::Float, PinKind::Output, this);
-}
-
-/* Destructors */
 
 Node::~Node() {
   for (Pin& start : inputs) {
@@ -59,15 +29,6 @@ Node::~Node() {
       end->removeLink(&start);
   }
 }
-
-/* Manage Links */
-
-void Pin::removeLink(Pin* target) {
-  auto index = std::find(pins.begin(), pins.end(), target);
-  pins.erase(index);
-}
-
-void Pin::addLink(Pin* target) { pins.push_back(target); }
 
 bool Node::isAncestor(Node* target) const {
   if (this == target)
@@ -81,6 +42,44 @@ bool Node::isAncestor(Node* target) const {
   }
 
   return false;
+}
+
+unsigned long Node::getPinCount() const { return inputs.size() + outputs.size(); }
+
+/* Node constructors */
+
+SurfaceOutputNode::SurfaceOutputNode(unsigned long id) : Node(id, NodeType::SurfaceOutput, "Surface Output", ImColor(200, 100, 100)) { // :) ill protect this from getting inlined by clang-format
+  inputs.emplace_back(++id, "", PinType::Surface, PinKind::Input, this);
+}
+
+SurfaceBooleanNode::SurfaceBooleanNode(unsigned long id) : Node(id, NodeType::SurfaceBoolean, "Surface Boolean", ImColor(100, 150, 200)) {
+  inputs.emplace_back(++id, "Input A", PinType::Surface, PinKind::Input, this);
+  inputs.emplace_back(++id, "Input B,C...", PinType::Surface, PinKind::InputMulti, this);
+  outputs.emplace_back(++id, "Output", PinType::Surface, PinKind::Output, this);
+}
+
+SurfaceCreateBoxNode::SurfaceCreateBoxNode(unsigned long id) : Node(id, NodeType::SurfaceCreateBox, "Surface Box", ImColor(100, 200, 100)) {
+  inputs.emplace_back(++id, "Color", PinType::Vec3, PinKind::Input, this);
+  inputs.emplace_back(++id, "Postion", PinType::Vec3, PinKind::Input, this);
+  outputs.emplace_back(++id, "", PinType::Surface, PinKind::Output, this);
+}
+
+Vec3TranslateNode::Vec3TranslateNode(unsigned long id) : Node(id, NodeType::Vec3Translate, "Vec3 Translate", ImColor(200, 100, 100)) {
+  inputs.emplace_back(++id, "Input", PinType::Vec3, PinKind::Input, this);
+  outputs.emplace_back(++id, "Output", PinType::Vec3, PinKind::Output, this);
+}
+
+Vec3ScaleNode::Vec3ScaleNode(unsigned long id) : Node(id, NodeType::Vec3Scale, "Vec3 Scale", ImColor(200, 100, 100)) {
+  inputs.emplace_back(++id, "Input", PinType::Vec3, PinKind::Input, this);
+  outputs.emplace_back(++id, "Output", PinType::Vec3, PinKind::Output, this);
+}
+
+InputPosNode::InputPosNode(unsigned long id) : Node(id, NodeType::InputPosition, "Position", ImColor(200, 100, 100)) { //
+  outputs.emplace_back(++id, "", PinType::Vec3, PinKind::Output, this);
+}
+
+InputTimeNode::InputTimeNode(unsigned long id) : Node(id, NodeType::InputTime, "Time", ImColor(200, 100, 100)) { //
+  outputs.emplace_back(++id, "", PinType::Float, PinKind::Output, this);
 }
 
 /* UI builders */
@@ -215,6 +214,46 @@ void InputTimeNode::drawContent() {
   drawBaseOutput(o0);
 }
 
+/* Data loading/saving */
+
+void Node::setData(const std::vector<float>& data) {}
+std::vector<float> Node::getData() const { return {}; }
+
+std::vector<float> SurfaceBooleanNode::getData() const { return {smooth, static_cast<float>(type)}; }
+void SurfaceBooleanNode::setData(const std::vector<float>& data) {
+  if (data.size() == 2) {
+    smooth = data[0];
+    type = static_cast<BooleanType>(static_cast<int>(data[1]));
+  }
+}
+
+std::vector<float> SurfaceCreateBoxNode::getData() const { return {col.x, col.y, col.z}; }
+void SurfaceCreateBoxNode::setData(const std::vector<float>& data) {
+  if (data.size() == 3) {
+    col.x = data[0];
+    col.y = data[1];
+    col.z = data[2];
+  }
+}
+
+std::vector<float> Vec3TranslateNode::getData() const { return {val.x, val.y, val.z}; }
+void Vec3TranslateNode::setData(const std::vector<float>& data) {
+  if (data.size() == 3) {
+    val.x = data[0];
+    val.y = data[1];
+    val.z = data[2];
+  }
+}
+
+std::vector<float> Vec3ScaleNode::getData() const { return {val.x, val.y, val.z}; }
+void Vec3ScaleNode::setData(const std::vector<float>& data) {
+  if (data.size() == 3) {
+    val.x = data[0];
+    val.y = data[1];
+    val.z = data[2];
+  }
+}
+
 /* Graph parsing */
 
 const char* surfaceDefault = "Surface(FLOAT_MAX,vec3(0.0),0.0)";
@@ -292,15 +331,3 @@ std::string InputPosNode::generateGlsl() const { //
 std::string InputTimeNode::generateGlsl() const { //
   return "t";
 }
-
-// only nodes with data are registered
-
-CEREAL_REGISTER_TYPE(Vec3ScaleNode)
-CEREAL_REGISTER_TYPE(Vec3TranslateNode)
-CEREAL_REGISTER_TYPE(SurfaceBooleanNode)
-CEREAL_REGISTER_TYPE(SurfaceCreateBoxNode)
-
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, Vec3ScaleNode)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, Vec3TranslateNode)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, SurfaceBooleanNode)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, SurfaceCreateBoxNode)

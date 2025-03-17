@@ -57,11 +57,12 @@ int main() {
   ProjectData pd;
   Scene scene;
   Viewport viewport(window, &scene);
+  SdfNodeEditor sdfNodeEditor;
 
   initializeImGui(window);
 
   while (glfwWindowShouldClose(window) == 0) {
-    buildUi(window, pd, viewport, scene);
+    buildUi(window, pd, viewport, scene, sdfNodeEditor);
 
     viewport.render();
     ImGui::Render();

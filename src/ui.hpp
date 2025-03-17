@@ -15,6 +15,6 @@ void setStyle();
 
 void setupUi(GLFWwindow* window);
 
-void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene);
+void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, SdfNodeEditor& sdfNodeEditor);
 
 #endif

@@ -42,7 +42,6 @@ void setupImGuiStyle() {
   style.GrabRounding = 3.0f;
   style.TabRounding = 3.0f;
   style.TabBorderSize = 0.0f;
-  style.TabMinWidthForCloseButton = 0.0f;
   style.ColorButtonPosition = ImGuiDir_Right;
   style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
   style.SelectableTextAlign = ImVec2(0.0f, 0.0f);
@@ -131,7 +130,7 @@ void setupUi(GLFWwindow* window) {
   updateWindowTitle(window, a);
 }
 
-void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene) {
+void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, SdfNodeEditor& sdfNodeEditor) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -337,8 +336,6 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
               sdfNodeEditor.addNode<SurfaceCreateBoxNode>();
             if (ImGui::MenuItem("Boolean"))
               sdfNodeEditor.addNode<SurfaceBooleanNode>();
-            // if (ImGui::MenuItem("Output"))
-            //   sdfNodeEditor.addNode<SurfaceOutputNode>();
             ImGui::EndMenu();
           }
           if (ImGui::BeginMenu("Vec3")) {

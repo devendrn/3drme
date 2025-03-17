@@ -62,7 +62,12 @@ public:
   virtual void drawContent() {};
   virtual std::string generateGlsl() const;
 
+  virtual std::vector<float> getData() const;
+  virtual void setData(const std::vector<float>& data);
+
   bool isAncestor(Node* target) const;
+
+  unsigned long getPinCount() const;
 };
 
 struct Link {
@@ -86,7 +91,8 @@ public:
   SurfaceBooleanNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
-  template <class Archive> void serialize(Archive& archive) { archive(smooth, type); }
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
 
 private:
   enum class BooleanType { Union, Intersection, Difference };
@@ -100,7 +106,8 @@ public:
   SurfaceCreateBoxNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
-  template <class Archive> void serialize(Archive& archive) { archive(col); }
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
 
 private:
   glm::vec3 col = glm::vec3(0.0f);
@@ -113,7 +120,8 @@ public:
   Vec3TranslateNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
-  template <class Archive> void serialize(Archive& archive) { archive(val); }
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
 
 private:
   glm::vec3 val = glm::vec3(0.0f);
@@ -124,7 +132,8 @@ public:
   Vec3ScaleNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
-  template <class Archive> void serialize(Archive& archive) { archive(val); }
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
 
 private:
   glm::vec3 val = glm::vec3(0.0f);
