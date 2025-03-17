@@ -47,6 +47,7 @@ public:
   ed::NodeId ID;
   NodeType type;
 
+  // TODO: Use these
   ImColor color;
   ImVec2 size;
 
@@ -75,16 +76,17 @@ struct Link {
 
 class SurfaceOutputNode : public Node {
 public:
-  SurfaceOutputNode(unsigned long id);
+  SurfaceOutputNode(unsigned long id = 0);
   void drawContent() override;
   std::string generateGlsl() const override;
 };
 
 class SurfaceBooleanNode : public Node {
 public:
-  SurfaceBooleanNode(unsigned long id);
+  SurfaceBooleanNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
+  template <class Archive> void serialize(Archive& archive) { archive(smooth, type); }
 
 private:
   enum class BooleanType { Union, Intersection, Difference };
@@ -95,9 +97,10 @@ private:
 
 class SurfaceCreateBoxNode : public Node {
 public:
-  SurfaceCreateBoxNode(unsigned long id);
+  SurfaceCreateBoxNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
+  template <class Archive> void serialize(Archive& archive) { archive(col); }
 
 private:
   glm::vec3 col = glm::vec3(0.0f);
@@ -107,9 +110,10 @@ private:
 
 class Vec3TranslateNode : public Node {
 public:
-  Vec3TranslateNode(unsigned long id);
+  Vec3TranslateNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
+  template <class Archive> void serialize(Archive& archive) { archive(val); }
 
 private:
   glm::vec3 val = glm::vec3(0.0f);
@@ -117,9 +121,10 @@ private:
 
 class Vec3ScaleNode : public Node {
 public:
-  Vec3ScaleNode(unsigned long id);
+  Vec3ScaleNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
+  template <class Archive> void serialize(Archive& archive) { archive(val); }
 
 private:
   glm::vec3 val = glm::vec3(0.0f);
@@ -129,14 +134,14 @@ private:
 
 class InputPosNode : public Node {
 public:
-  InputPosNode(unsigned long id);
+  InputPosNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
 };
 
 class InputTimeNode : public Node {
 public:
-  InputTimeNode(unsigned long id);
+  InputTimeNode(unsigned long id = 0);
   std::string generateGlsl() const override;
   void drawContent() override;
 };

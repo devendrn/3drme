@@ -197,7 +197,7 @@ std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type)
 void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
   for (auto& node : nodes) {
     auto p = ed::GetNodePosition(node->ID);
-    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y};
+    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y, getNodeData(node.get())};
     graph.nodes.push_back(sNode);
   }
   for (auto& link : links) {
@@ -218,7 +218,15 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
       continue;
     }
 
-    nodes.push_back(std::move(newNode)); // newNode is no longer accessible
+    auto tmpid = std::move(newNode->ID);
+    auto tmpinputs = std::move(newNode->inputs);
+    auto tmpoutputs = std::move(newNode->outputs);
+    setNodeData(newNode.get(), serializableNode.data); // uses data with id=0!!
+    newNode->ID = std::move(tmpid);
+    newNode->inputs = std::move(tmpinputs);
+    newNode->outputs = std::move(tmpoutputs);
+
+    nodes.push_back(std::move(newNode));
     ed::SetNodePosition(nodes.back()->ID, ImVec2(serializableNode.px, serializableNode.py));
     nextId = serializableNode.ID + 1;
 
@@ -242,3 +250,28 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     nextId = serializableLink.ID + 1;
   }
 };
+
+NodeData SdfNodeEditor::getNodeData(const Node* node) const {
+  if (const auto* typedNode = dynamic_cast<const Vec3ScaleNode*>(node))
+    return *typedNode;
+  if (const auto* typedNode = dynamic_cast<const Vec3TranslateNode*>(node))
+    return *typedNode;
+  if (const auto* typedNode = dynamic_cast<const SurfaceBooleanNode*>(node))
+    return *typedNode;
+  if (const auto* typedNode = dynamic_cast<const SurfaceCreateBoxNode*>(node))
+    return *typedNode;
+  return std::monostate{}; // case for nodes with no data
+}
+
+void SdfNodeEditor::setNodeData(Node* node, const NodeData& data) {
+  std::visit(
+      [node](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (!std::is_same_v<T, std::monostate>) {
+          if (auto* typedNode = dynamic_cast<T*>(node)) {
+            *typedNode = arg;
+          }
+        }
+      },
+      data);
+}

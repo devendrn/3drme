@@ -6,6 +6,7 @@
 #include <variant>
 #include <vector>
 
+#include <cereal/types/variant.hpp>
 #include <cereal/types/vector.hpp>
 #include <glm/glm.hpp>
 #include <imgui.h>
@@ -15,11 +16,18 @@
 
 namespace ed = ax::NodeEditor;
 
+using NodeData = std::variant<               //
+    std::monostate,                          //
+    Vec3ScaleNode, Vec3TranslateNode,        //
+    SurfaceBooleanNode, SurfaceCreateBoxNode //
+    >;
+
 struct SerializableNode {
   unsigned long ID;
   NodeType type;
   float px, py;
-  template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py); }
+  NodeData data;
+  template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py, data); }
 };
 
 struct SerializableLink {
@@ -69,6 +77,9 @@ private:
   void manageDeletion();
 
   std::unique_ptr<Node> createNode(unsigned long id, NodeType type);
+
+  NodeData getNodeData(const Node* node) const;
+  void setNodeData(Node* node, const NodeData& data);
 };
 
 // FIXME: Move elsewhere

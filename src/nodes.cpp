@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <string>
 
+#include <cereal/types/polymorphic.hpp>
 #include <imgui.h>
 #include <imgui_node_editor.h>
 
@@ -291,3 +292,15 @@ std::string InputPosNode::generateGlsl() const { //
 std::string InputTimeNode::generateGlsl() const { //
   return "t";
 }
+
+// only nodes with data are registered
+
+CEREAL_REGISTER_TYPE(Vec3ScaleNode)
+CEREAL_REGISTER_TYPE(Vec3TranslateNode)
+CEREAL_REGISTER_TYPE(SurfaceBooleanNode)
+CEREAL_REGISTER_TYPE(SurfaceCreateBoxNode)
+
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, Vec3ScaleNode)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, Vec3TranslateNode)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, SurfaceBooleanNode)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Node, SurfaceCreateBoxNode)

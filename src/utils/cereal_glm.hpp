@@ -1,3 +1,6 @@
+#ifndef CEREAL_GLM_H
+#define CEREAL_GLM_H
+
 #include <glm/glm.hpp>
 
 namespace cereal {
@@ -7,3 +10,5 @@ template <class Archive> void serialize(Archive& archive, glm::vec3& d) { archiv
 template <class Archive> void serialize(Archive& archive, glm::vec4& d) { archive(d.x, d.y, d.z, d.w); };
 
 } // namespace cereal
+
+#endif
