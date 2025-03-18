@@ -115,6 +115,7 @@ void SdfNodeEditor::manageCreation() {
             endPin->pins.push_back(startPin);
 
             links.emplace_back(nextId++, startPin->ID, endPin->ID);
+            std::cout << "[Node editor] Add link " << links.back().ID.Get() << ": " << startPin->node->ID.Get() << "->" << endPin->node->ID.Get() << "\n";
           }
         }
       }
@@ -131,19 +132,29 @@ void SdfNodeEditor::manageDeletion() {
       if (!ed::AcceptDeletedItem())
         continue;
 
-      // delete connected links
-      for (int i = 0; i < links.size(); i++) {
-        if (links[i].StartPinID.Get() == nodeId.Get() || links[i].EndPinID.Get() == nodeId.Get())
-          links.erase(links.begin() + i);
-      }
-
-      // delete node
       for (int i = 0; i < nodes.size(); i++) {
         if (nodes[i]->ID == nodeId) {
-          if (i == 0) // reject root output node (i=0) {
+          if (i == 0) { // reject root output node (i=0)
             ed::RejectDeletedItem();
-          else
-            nodes.erase(nodes.begin() + i);
+            continue;
+          }
+
+          // delete connected links
+          for (int j = 0; j < links.size(); j++) {
+            Link& l = links[j];
+            auto& start = findPin(l.StartPinID)->node->ID;
+            auto& end = findPin(l.EndPinID)->node->ID;
+            std::cout << "[Node editor] link " << l.ID.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
+            if (start == nodeId || end == nodeId) {
+              std::cout << "[Node editor] Delete link " << l.ID.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
+              links.erase(links.begin() + j);
+              j--; // !! don't increment j
+            }
+          }
+
+          // delete node
+          std::cout << "[Node editor] Delete node " << nodes[i]->ID.Get() << ": " << nodes[i]->name << "\n";
+          nodes.erase(nodes.begin() + i);
           break;
         }
       }
@@ -156,20 +167,22 @@ void SdfNodeEditor::manageDeletion() {
         continue;
 
       for (int i = 0; i < links.size(); i++) {
-        if (links[i].ID == linkId) {
-          Pin* start = findPin(links[i].StartPinID);
-          Pin* end = findPin(links[i].EndPinID);
+        Link& l = links[i];
+        if (l.ID == linkId) {
+          Pin* start = findPin(l.StartPinID);
+          Pin* end = findPin(l.EndPinID);
           if (start != nullptr)
             start->removeLink(end);
           if (end != nullptr)
             end->removeLink(start);
+          std::cout << "[Node editor] Delete link " << l.ID.Get() << ": " << start->node->ID.Get() << "->" << end->node->ID.Get() << "\n";
           links.erase(links.begin() + i);
           break;
         }
       }
     }
+    ed::EndDelete();
   }
-  ed::EndDelete();
 }
 
 std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type) {
@@ -186,6 +199,8 @@ std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type)
     return std::make_unique<SurfaceBooleanNode>(id);
   case NodeType::SurfaceCreateBox:
     return std::make_unique<SurfaceCreateBoxNode>(id);
+  case NodeType::SurfaceCreateSphere:
+    return std::make_unique<SurfaceCreateSphereNode>(id);
   case NodeType::SurfaceOutput:
     return std::make_unique<SurfaceOutputNode>(id);
   default:
@@ -209,6 +224,7 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
   nodes.clear();
   links.clear();
   nextId = 1;
+  std::cout << "[Node editor] Reset graph\n";
 
   for (auto& serializableNode : graph.nodes) {
     std::unique_ptr<Node> newNode = createNode(serializableNode.ID, serializableNode.type);
@@ -220,12 +236,9 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));
-    nextId = serializableNode.ID + 1;
-
     if (nodes.back()->type == NodeType::SurfaceOutput)
       output = nodes.back().get();
   }
-
   for (auto& serializableLink : graph.links) {
     Pin* startPin = findPin(serializableLink.startPinID);
     Pin* endPin = findPin(serializableLink.endPinID);
@@ -237,8 +250,12 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
 
     startPin->pins.push_back(endPin);
     endPin->pins.push_back(startPin);
-
     links.emplace_back(serializableLink.ID, serializableLink.startPinID, serializableLink.endPinID);
-    nextId = serializableLink.ID + 1;
   }
+
+  nextId = nodes.back()->ID.Get() + nodes.back()->getPinCount(); // nodes will never be empty
+  if (!links.empty())
+    nextId = std::max(nextId, links.back().ID.Get());
+
+  nextId++;
 };

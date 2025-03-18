@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <format>
+#include <iostream>
 #include <string>
 
 #include <imgui.h>
@@ -17,7 +19,9 @@ void Pin::removeLink(Pin* target) {
 
 void Pin::addLink(Pin* target) { pins.push_back(target); }
 
-Node::Node(unsigned long id, NodeType type, const char* name, ImColor color = ImColor(255, 255, 255)) : ID(id), type(type), name(name), color(color), size(0, 0) {}
+Node::Node(unsigned long id, NodeType type, const char* name, ImColor color = ImColor(255, 255, 255)) : ID(id), type(type), name(name), color(color), size(0, 0) { //
+    std::cout << "[Node editor] Create node " << id << ": " << name << "\n";
+}
 
 Node::~Node() {
   for (Pin& start : inputs) {
@@ -58,10 +62,18 @@ SurfaceBooleanNode::SurfaceBooleanNode(unsigned long id) : Node(id, NodeType::Su
   outputs.emplace_back(++id, "Output", PinType::Surface, PinKind::Output, this);
 }
 
-SurfaceCreateBoxNode::SurfaceCreateBoxNode(unsigned long id) : Node(id, NodeType::SurfaceCreateBox, "Surface Box", ImColor(100, 200, 100)) {
+SurfaceCreateBaseNode::SurfaceCreateBaseNode(unsigned long id, NodeType type, std::string name, std::string funcName) : Node(id, type, name.c_str(), ImColor(100, 200, 100)), funcName(funcName) {
   inputs.emplace_back(++id, "Color", PinType::Vec3, PinKind::Input, this);
   inputs.emplace_back(++id, "Postion", PinType::Vec3, PinKind::Input, this);
   outputs.emplace_back(++id, "", PinType::Surface, PinKind::Output, this);
+}
+SurfaceCreateBoxNode::SurfaceCreateBoxNode(unsigned long id) : SurfaceCreateBaseNode(id, NodeType::SurfaceCreateBox, "Box", "sdfBox") { //
+  id = id + getPinCount();
+  inputs.emplace_back(++id, "Size", PinType::Vec3, PinKind::Input, this);
+  inputs.emplace_back(++id, "Roundness", PinType::Float, PinKind::Input, this);
+};
+SurfaceCreateSphereNode::SurfaceCreateSphereNode(unsigned long id) : SurfaceCreateBaseNode(id, NodeType::SurfaceCreateSphere, "Sphere", "sdfSphere") { //
+  inputs.emplace_back(id + getPinCount() + 1, "Radius", PinType::Float, PinKind::Input, this);
 }
 
 Vec3TranslateNode::Vec3TranslateNode(unsigned long id) : Node(id, NodeType::Vec3Translate, "Vec3 Translate", ImColor(200, 100, 100)) {
@@ -106,8 +118,10 @@ ImColor getPinColor(PinType type) {
     return ImColor(1.0f, 1.0f, 0.3f);
   case PinType::Vec3:
     return ImColor(1.0f, 0.3f, 1.0f);
+  case PinType::Float:
+    return ImColor(0.8f, 0.8f, 0.8f);
   default:
-    return ImColor(1.0f, 1.0f, 1.0f);
+    return ImColor(1.0f, 0.3f, 0.3f);
   }
 }
 
@@ -170,14 +184,44 @@ void SurfaceBooleanNode::drawContent() {
   drawBaseInput(i1);
 }
 
-void SurfaceCreateBoxNode::drawContent() {
+void SurfaceCreateBaseNode::drawContent() {
   Pin& o0 = outputs[0];
   drawBaseOutput(o0);
 
   Pin& i0 = inputs[0];
   Pin& i1 = inputs[1];
   drawBaseInput(i0);
+  if (i0.pins.empty()) {
+    ImGui::ColorEdit3("##col", &col.x);
+    ImGui::Dummy(ImVec2(0, 4));
+  }
   drawBaseInput(i1);
+  if (i1.pins.empty()) {
+    ImGui::DragFloat3("##pos", &pos.x);
+    ImGui::Dummy(ImVec2(0, 4));
+  }
+}
+void SurfaceCreateBoxNode::drawContent() {
+  SurfaceCreateBaseNode::drawContent();
+  Pin& i2 = inputs[2];
+  Pin& i3 = inputs[3];
+  drawBaseInput(i2);
+  if (i2.pins.empty()) {
+    ImGui::DragFloat3("##bou", &bounds.x);
+    ImGui::Dummy(ImVec2(0, 4));
+  }
+  drawBaseInput(i3);
+  if (i3.pins.empty()) {
+    ImGui::DragFloat("##rou", &roundness);
+  }
+}
+void SurfaceCreateSphereNode::drawContent() {
+  SurfaceCreateBaseNode::drawContent();
+  Pin& i2 = inputs[2];
+  drawBaseInput(i2);
+  if (i2.pins.empty()) {
+    ImGui::DragFloat("##rad", &radius);
+  }
 }
 
 void Vec3TranslateNode::drawContent() {
@@ -221,24 +265,55 @@ std::vector<float> Node::getData() const { return {}; }
 
 std::vector<float> SurfaceBooleanNode::getData() const { return {smooth, static_cast<float>(type)}; }
 void SurfaceBooleanNode::setData(const std::vector<float>& data) {
-  if (data.size() == 2) {
+  if (data.size() >= 2) {
     smooth = data[0];
     type = static_cast<BooleanType>(static_cast<int>(data[1]));
   }
 }
 
-std::vector<float> SurfaceCreateBoxNode::getData() const { return {col.x, col.y, col.z}; }
-void SurfaceCreateBoxNode::setData(const std::vector<float>& data) {
-  if (data.size() == 3) {
+std::vector<float> SurfaceCreateBaseNode::getData() const { return {col.x, col.y, col.z, pos.x, pos.y, pos.z}; }
+void SurfaceCreateBaseNode::setData(const std::vector<float>& data) {
+  if (data.size() >= 6) {
     col.x = data[0];
     col.y = data[1];
     col.z = data[2];
+    pos.x = data[3];
+    pos.y = data[4];
+    pos.z = data[5];
+  }
+}
+std::vector<float> SurfaceCreateBoxNode::getData() const {
+  auto data = SurfaceCreateBaseNode::getData();
+  data.push_back(bounds.x); // 6
+  data.push_back(bounds.y);
+  data.push_back(bounds.z);
+  data.push_back(roundness); // 9
+  return data;
+}
+void SurfaceCreateBoxNode::setData(const std::vector<float>& data) {
+  SurfaceCreateBaseNode::setData(data);
+  if (data.size() >= 9) {
+    bounds.x = data[6];
+    bounds.y = data[7];
+    bounds.z = data[8];
+    roundness = data[9];
+  }
+}
+std::vector<float> SurfaceCreateSphereNode::getData() const {
+  auto data = SurfaceCreateBaseNode::getData();
+  data.push_back(radius); // 6
+  return data;
+}
+void SurfaceCreateSphereNode::setData(const std::vector<float>& data) {
+  SurfaceCreateBaseNode::setData(data);
+  if (data.size() >= 6) {
+    radius = data[6];
   }
 }
 
 std::vector<float> Vec3TranslateNode::getData() const { return {val.x, val.y, val.z}; }
 void Vec3TranslateNode::setData(const std::vector<float>& data) {
-  if (data.size() == 3) {
+  if (data.size() >= 3) {
     val.x = data[0];
     val.y = data[1];
     val.z = data[2];
@@ -247,7 +322,7 @@ void Vec3TranslateNode::setData(const std::vector<float>& data) {
 
 std::vector<float> Vec3ScaleNode::getData() const { return {val.x, val.y, val.z}; }
 void Vec3ScaleNode::setData(const std::vector<float>& data) {
-  if (data.size() == 3) {
+  if (data.size() >= 3) {
     val.x = data[0];
     val.y = data[1];
     val.z = data[2];
@@ -256,21 +331,25 @@ void Vec3ScaleNode::setData(const std::vector<float>& data) {
 
 /* Graph parsing */
 
-const char* surfaceDefault = "Surface(FLOAT_MAX,vec3(0.0),0.0)";
+const char* surfaceDefault = "Surface(FLOAT_MAX,vec3(0),0.0)";
 
-std::string vec3ToString(glm::vec3 val) { return "vec3(" + std::to_string(val.x) + "," + std::to_string(val.y) + "," + std::to_string(val.z) + ")"; }
+std::string vec3ToString(glm::vec3 val) { return std::format("vec3({},{},{})", val.x, val.y, val.z); }
 
 std::string Node::generateGlsl() const { return ""; }
 
 std::string SurfaceOutputNode::generateGlsl() const {
-  if (!inputs[0].pins.empty())
-    return "s = " + inputs[0].pins[0]->node->generateGlsl() + ";";
-  return "";
+  if (inputs[0].pins.empty())
+    return "";
+  return std::format("s={};", inputs[0].pins[0]->node->generateGlsl());
 }
 
 std::string SurfaceBooleanNode::generateGlsl() const {
   const Pin& i0 = inputs[0];
   const Pin& i1 = inputs[1];
+
+  for (const auto& p : i1.pins)
+    std::cout << p->Name << "\n";
+
   if (i0.pins.empty())
     return surfaceDefault;
 
@@ -291,37 +370,54 @@ std::string SurfaceBooleanNode::generateGlsl() const {
     func = "iSurf";
 
   auto l = i1.pins.size();
-  for (int i = 0; i < l; i++) {
-    result = func + "(" + result + "," + i1.pins[i]->node->generateGlsl() + end;
-  }
+  for (int i = 0; i < l; i++)
+    result = std::format("{}({},{}{}", func, result, i1.pins[i]->node->generateGlsl(), end);
 
   return result;
 }
 
-std::string SurfaceCreateBoxNode::generateGlsl() const {
-  std::string posCode = "pos";
+std::string SurfaceCreateBaseNode::generateGlsl() const {
+  std::string posCode = "pos+" + vec3ToString(pos);
   std::string colCode = vec3ToString(col);
   if (!inputs[0].pins.empty())
     colCode = inputs[0].pins[0]->node->generateGlsl();
   if (!inputs[1].pins.empty())
     posCode = inputs[1].pins[0]->node->generateGlsl();
-  return "Surface(sdfBox(" + posCode + ")," + colCode + ",0.0)";
+  return std::format("Surface({}({}{}),{},0.0)", funcName, posCode, args(), colCode);
+}
+std::string SurfaceCreateBoxNode::args() const {
+  std::string s = ",";
+
+  if (inputs[2].pins.empty())
+    s += vec3ToString(bounds);
+  else
+    s += inputs[2].pins[0]->node->generateGlsl();
+
+  if (inputs[3].pins.empty())
+    s += std::format(",{:.3f}", roundness);
+  else
+    s += std::format(",{}", inputs[3].pins[0]->node->generateGlsl());
+
+  return s;
+}
+std::string SurfaceCreateSphereNode::args() const {
+  if (inputs[2].pins.empty())
+    return std::format(",{:.3f}", radius);
+  return std::format(",{}", inputs[2].pins[0]->node->generateGlsl());
 }
 
 std::string Vec3TranslateNode::generateGlsl() const {
   std::string b = vec3ToString(val);
-  if (!inputs[0].pins.empty()) {
-    return "(" + inputs[0].pins[0]->node->generateGlsl() + "+" + b + ")";
-  }
-  return b;
+  if (inputs[0].pins.empty())
+    return b;
+  return std::format("({}+{})", inputs[0].pins[0]->node->generateGlsl(), b);
 }
 
 std::string Vec3ScaleNode::generateGlsl() const {
-  if (!inputs[0].pins.empty()) {
-    std::string b = vec3ToString(val);
-    return "(" + inputs[0].pins[0]->node->generateGlsl() + "*" + b + ")";
-  }
-  return "vec3(0.0)";
+  std::string b = vec3ToString(val);
+  if (inputs[0].pins.empty())
+    return b;
+  return std::format("({}*{})", inputs[0].pins[0]->node->generateGlsl(), b);
 }
 
 std::string InputPosNode::generateGlsl() const { //

@@ -29,13 +29,22 @@ layout(std140, binding = 0) uniform uObjectBlock {
 // SDF functions: https://iquilezles.org/articles/distfunctions/
 // Smooth min: https://iquilezles.org/articles/smin/
 
+// legacy
 float sdfSphere(vec3 p) {
   return length(p)-1.0;
 }
-
 float sdfBox(vec3 p) {
   vec3 q = abs(p) - 1.0;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+// used by node editor
+float sdfSphere(vec3 p, float r) {
+  return length(p)-r;
+}
+float sdfBox(vec3 p, vec3 b, float r) {
+  vec3 q = abs(p) - b + r;
+  return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
 }
 
 float sdfShape(vec3 p, int type) {

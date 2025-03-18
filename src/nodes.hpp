@@ -12,6 +12,7 @@ namespace ed = ax::NodeEditor;
 
 enum class NodeType { //
   SurfaceCreateBox,
+  SurfaceCreateSphere,
   SurfaceBoolean,
   SurfaceOutput,
   Vec3Translate,
@@ -81,14 +82,14 @@ struct Link {
 
 class SurfaceOutputNode : public Node {
 public:
-  SurfaceOutputNode(unsigned long id = 0);
+  SurfaceOutputNode(unsigned long id);
   void drawContent() override;
   std::string generateGlsl() const override;
 };
 
 class SurfaceBooleanNode : public Node {
 public:
-  SurfaceBooleanNode(unsigned long id = 0);
+  SurfaceBooleanNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
   std::vector<float> getData() const override;
@@ -101,23 +102,56 @@ private:
   BooleanType type = BooleanType::Union;
 };
 
-class SurfaceCreateBoxNode : public Node {
+/* Surface create  nodes */
+
+class SurfaceCreateBaseNode : public Node {
 public:
-  SurfaceCreateBoxNode(unsigned long id = 0);
+  SurfaceCreateBaseNode(unsigned long id, NodeType type, std::string name, std::string funcName);
   std::string generateGlsl() const override;
   void drawContent() override;
   std::vector<float> getData() const override;
   void setData(const std::vector<float>& data) override;
 
+  std::string funcName;
+  virtual std::string args() const { return ""; };
+
 private:
-  glm::vec3 col = glm::vec3(0.0f);
+  glm::vec3 col = glm::vec3(1.0f);
+  glm::vec3 pos = glm::vec3(0.0f);
+  glm::vec3 scale = glm::vec3(0.0f);
+  glm::vec3 rotation = glm::vec3(0.0f);
+};
+
+class SurfaceCreateBoxNode : public SurfaceCreateBaseNode {
+public:
+  SurfaceCreateBoxNode(unsigned long id);
+  void drawContent() override;
+  std::string args() const override;
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
+
+private:
+  float roundness = 0.0f;
+  glm::vec3 bounds = glm::vec3(1.0f);
+};
+
+class SurfaceCreateSphereNode : public SurfaceCreateBaseNode {
+public:
+  SurfaceCreateSphereNode(unsigned long id);
+  void drawContent() override;
+  std::string args() const override;
+  std::vector<float> getData() const override;
+  void setData(const std::vector<float>& data) override;
+
+private:
+  float radius = 1.0f;
 };
 
 /* Vec3 Nodes */
 
 class Vec3TranslateNode : public Node {
 public:
-  Vec3TranslateNode(unsigned long id = 0);
+  Vec3TranslateNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
   std::vector<float> getData() const override;
@@ -129,28 +163,28 @@ private:
 
 class Vec3ScaleNode : public Node {
 public:
-  Vec3ScaleNode(unsigned long id = 0);
+  Vec3ScaleNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
   std::vector<float> getData() const override;
   void setData(const std::vector<float>& data) override;
 
 private:
-  glm::vec3 val = glm::vec3(0.0f);
+  glm::vec3 val = glm::vec3(1.0f);
 };
 
 /* Input Nodes */
 
 class InputPosNode : public Node {
 public:
-  InputPosNode(unsigned long id = 0);
+  InputPosNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 };
 
 class InputTimeNode : public Node {
 public:
-  InputTimeNode(unsigned long id = 0);
+  InputTimeNode(unsigned long id);
   std::string generateGlsl() const override;
   void drawContent() override;
 };

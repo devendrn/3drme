@@ -334,6 +334,8 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           if (ImGui::BeginMenu("Surface")) {
             if (ImGui::MenuItem("Box"))
               sdfNodeEditor.addNode<SurfaceCreateBoxNode>();
+            if (ImGui::MenuItem("Sphere"))
+              sdfNodeEditor.addNode<SurfaceCreateSphereNode>();
             if (ImGui::MenuItem("Boolean"))
               sdfNodeEditor.addNode<SurfaceBooleanNode>();
             ImGui::EndMenu();
