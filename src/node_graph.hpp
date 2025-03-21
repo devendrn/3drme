@@ -45,7 +45,7 @@ public:
     nextId += nodes.back()->getPinCount();
   }
 
-  std::string generateGlslCode() const;
+  void generateGlslCode(std::string& surface, std::string& sky) const;
 
   void saveGraph(SerializableGraph& graph);
   void loadGraph(SerializableGraph& graph);
@@ -56,7 +56,7 @@ private:
 
   ed::EditorContext* editor = nullptr;
 
-  Node* output;
+  OutputNode* output;
 
   unsigned long nextId = 1;
 

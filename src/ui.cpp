@@ -357,15 +357,20 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           ImGui::EndMenu();
         }
         if (ImGui::MenuItem("Refresh")) {
-          std::string glslCode = sdfNodeEditor.generateGlslCode();
+          std::string surfaceCode;
+          std::string skyCode;
+          sdfNodeEditor.generateGlslCode(surfaceCode, skyCode);
 
           viewport.shader.resetFshSource();
           std::string& code = viewport.shader.fshEdited;
 
-          auto line = code.find("// !sdf_inline");
-          code.insert(line, glslCode);
+          auto line = code.find("// !sky_inline");
+          code.insert(line, skyCode);
+          line = code.find("// !sdf_inline", line);
+          code.insert(line, surfaceCode);
 
-          std::cout << "[Node editor] Inline shader code: \n" << glslCode << "\n";
+          std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
+          std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
           viewport.shader.reloadFragment();
         }
       }

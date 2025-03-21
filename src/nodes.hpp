@@ -14,7 +14,7 @@ enum class NodeType { //
   SurfaceCreateBox,
   SurfaceCreateSphere,
   SurfaceBoolean,
-  SurfaceOutput,
+  Output,
   Vec3Translate,
   Vec3Scale,
   InputTime,
@@ -80,11 +80,12 @@ struct Link {
 
 /* Surface Nodes */
 
-class SurfaceOutputNode : public Node {
+class OutputNode : public Node {
 public:
-  SurfaceOutputNode(unsigned long id);
+  OutputNode(unsigned long id);
   void drawContent() override;
   std::string generateGlsl() const override;
+  std::string generateSkyGlsl() const;
 };
 
 class SurfaceBooleanNode : public Node {

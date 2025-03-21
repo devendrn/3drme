@@ -101,6 +101,12 @@ vec3 applyTransform(vec3 p, mat4 t) {
   return p;
 }
 
+vec3 renderSky(vec3 pos, float t) {
+  vec3 s = vec3(0.0);
+  // !sky_inline
+  return s;
+}
+
 Surface nodeEditorSdf(vec3 pos, float t) {
   Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
   // !sdf_inline
@@ -214,8 +220,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
   }
 
   if (dist > TMAX || candidateError > PIXEL_RADIUS) {
-    // skybox
-    return vec3(0.06);
+    return renderSky(rd*TMAX, uTime);
   }
 
   vec3 col = s.color;

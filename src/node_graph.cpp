@@ -11,8 +11,8 @@
 SdfNodeEditor::SdfNodeEditor() {
   ed::Config config;
   editor = ed::CreateEditor(&config);
-  addNode<SurfaceOutputNode>();
-  output = nodes.back().get();
+  addNode<OutputNode>();
+  output = dynamic_cast<OutputNode*>(nodes.back().get());
 }
 
 SdfNodeEditor::~SdfNodeEditor() { ed::DestroyEditor(editor); }
@@ -33,7 +33,10 @@ void SdfNodeEditor::show() {
   ed::End();
 }
 
-std::string SdfNodeEditor::generateGlslCode() const { return output->generateGlsl(); }
+void SdfNodeEditor::generateGlslCode(std::string& surface, std::string& sky) const {
+  surface = output->generateGlsl();
+  sky = output->generateSkyGlsl();
+}
 
 Node* SdfNodeEditor::findNode(ed::NodeId id) const {
   for (const auto& node : nodes) {
@@ -201,8 +204,8 @@ std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type)
     return std::make_unique<SurfaceCreateBoxNode>(id);
   case NodeType::SurfaceCreateSphere:
     return std::make_unique<SurfaceCreateSphereNode>(id);
-  case NodeType::SurfaceOutput:
-    return std::make_unique<SurfaceOutputNode>(id);
+  case NodeType::Output:
+    return std::make_unique<OutputNode>(id);
   default:
     return nullptr;
   }
@@ -236,8 +239,8 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));
-    if (nodes.back()->type == NodeType::SurfaceOutput)
-      output = nodes.back().get();
+    if (nodes.back()->type == NodeType::Output)
+      output = dynamic_cast<OutputNode*>(nodes.back().get());
   }
   for (auto& serializableLink : graph.links) {
     Pin* startPin = findPin(serializableLink.startPinID);
