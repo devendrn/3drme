@@ -1,6 +1,8 @@
 #ifndef NODES_H
 #define NODES_H
 
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -11,10 +13,10 @@
 namespace ed = ax::NodeEditor;
 
 enum class NodeType { //
+  Output,
   SurfaceCreateBox,
   SurfaceCreateSphere,
   SurfaceBoolean,
-  Output,
   Vec3Translate,
   Vec3Scale,
   InputTime,
@@ -28,166 +30,97 @@ class Node;
 
 class Pin {
 public:
-  ed::PinId ID;
-  PinType Type;
-  PinKind Kind;
+  ed::PinId id;
+  PinType type;
+  PinKind kind;
 
-  std::string Name;
+  std::string name;
 
   std::vector<Pin*> pins;
   Node* node; // change to &Node ?
 
   Pin(unsigned long id, const char* name, PinType type, PinKind kind, Node* node);
 
-  void removeLink(Pin* target);
+  void removeLink(const Pin* target);
   void addLink(Pin* target);
+  void clearLinks();
+};
+
+struct PinDefinition {
+  std::string name;
+  PinType type;
+  PinKind kind;
+};
+
+struct NodeDefinition {
+  NodeType type;
+  std::string name;
+  std::vector<PinDefinition> inputs;
+  std::vector<PinDefinition> outputs;
+  std::vector<float> data;
+
+  std::function<void(Node*, const std::vector<float>&)> setData;
+  std::function<std::vector<float>(const Node*)> getData;
+  std::function<void(Node*)> drawContent;
+  std::function<std::string(const Node*, int)> generateGlsl;
+
+  void initializeData(std::vector<float> d) { data = d; };
+  void addInput(std::string name, PinType type, bool multi = false) { inputs.push_back({name, type, multi ? PinKind::InputMulti : PinKind::Input}); }
+  void addOutput(std::string name, PinType type) { outputs.push_back({name, type, PinKind::Output}); }
+  void setDrawContent(std::function<void(Node*)> func) { drawContent = func; }
+  void setGenerateGlsl(std::function<std::string(const Node*, int)> func) { generateGlsl = func; }
 };
 
 class Node {
 public:
-  ed::NodeId ID;
-  NodeType type;
+  Node(unsigned long id, const NodeDefinition& definition);
+  ~Node();
+
+  void draw();
+  void drawContent();
+  std::string generateGlsl(int variant = 0) const;
+
+  std::vector<float> getData() const;
+  void setData(const std::vector<float>& data);
+
+  bool isAncestor(Node* target) const;
+
+  void addInputPin(const char* name, PinType type, bool multi = false);
+  void addOutputPin(const char* name, PinType type);
+  Pin* getPin(ed::PinId id);
+
+  const ed::NodeId& getId() const { return id; };
+  unsigned long getIdLong() const { return id.Get(); };
+  unsigned long getLastId() const { return lastId; };
+  NodeType getType() const { return definition.type; };
+  const std::string& getName() const { return definition.name; };
+  const std::vector<Pin>& getInputs() const { return inputs; };
+  const std::vector<Pin>& getOutputs() const { return outputs; };
+
+  std::vector<Pin> inputs;
+  std::vector<Pin> outputs;
+  std::vector<float> data;
+
+  std::string pin0GenerateGlsl(int pinIndex, std::string defaultCode) const;
+
+private:
+  ed::NodeId id;
+  unsigned long lastId;
+  const NodeDefinition& definition;
 
   // TODO: Use these
   ImColor color;
   ImVec2 size;
-
-  std::string name;
-
-  std::vector<Pin> inputs, outputs;
-
-  Node(unsigned long id, NodeType type, const char* name, ImColor color);
-  ~Node();
-
-  virtual void draw();
-  virtual void drawContent() {};
-  virtual std::string generateGlsl() const;
-
-  virtual std::vector<float> getData() const;
-  virtual void setData(const std::vector<float>& data);
-
-  bool isAncestor(Node* target) const;
-
-  unsigned long getPinCount() const;
 };
 
 struct Link {
-  ed::LinkId ID;
-  ed::PinId StartPinID, EndPinID;
+  ed::LinkId id;
+  ed::PinId StartPinId;
+  ed::PinId EndPinId;
 
-  Link(ed::LinkId id, ed::PinId startPinId, ed::PinId endPinId) : ID(id), StartPinID(startPinId), EndPinID(endPinId) {}
+  Link(ed::LinkId id, ed::PinId startPinId, ed::PinId endPinId) : id(id), StartPinId(startPinId), EndPinId(endPinId) {}
 };
 
-/* Surface Nodes */
-
-class OutputNode : public Node {
-public:
-  OutputNode(unsigned long id);
-  void drawContent() override;
-  std::string generateGlsl() const override;
-  std::string generateSkyGlsl() const;
-};
-
-class SurfaceBooleanNode : public Node {
-public:
-  SurfaceBooleanNode(unsigned long id);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-private:
-  enum class BooleanType { Union, Intersection, Difference };
-
-  float smooth = 0.0f;
-  BooleanType type = BooleanType::Union;
-};
-
-/* Surface create  nodes */
-
-class SurfaceCreateBaseNode : public Node {
-public:
-  SurfaceCreateBaseNode(unsigned long id, NodeType type, std::string name, std::string funcName);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-  std::string funcName;
-  virtual std::string args() const { return ""; };
-
-private:
-  glm::vec3 col = glm::vec3(1.0f);
-  glm::vec3 pos = glm::vec3(0.0f);
-  glm::vec3 scale = glm::vec3(0.0f);
-  glm::vec3 rotation = glm::vec3(0.0f);
-};
-
-class SurfaceCreateBoxNode : public SurfaceCreateBaseNode {
-public:
-  SurfaceCreateBoxNode(unsigned long id);
-  void drawContent() override;
-  std::string args() const override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-private:
-  float roundness = 0.0f;
-  glm::vec3 bounds = glm::vec3(1.0f);
-};
-
-class SurfaceCreateSphereNode : public SurfaceCreateBaseNode {
-public:
-  SurfaceCreateSphereNode(unsigned long id);
-  void drawContent() override;
-  std::string args() const override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-private:
-  float radius = 1.0f;
-};
-
-/* Vec3 Nodes */
-
-class Vec3TranslateNode : public Node {
-public:
-  Vec3TranslateNode(unsigned long id);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-private:
-  glm::vec3 val = glm::vec3(0.0f);
-};
-
-class Vec3ScaleNode : public Node {
-public:
-  Vec3ScaleNode(unsigned long id);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-  std::vector<float> getData() const override;
-  void setData(const std::vector<float>& data) override;
-
-private:
-  glm::vec3 val = glm::vec3(1.0f);
-};
-
-/* Input Nodes */
-
-class InputPosNode : public Node {
-public:
-  InputPosNode(unsigned long id);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-};
-
-class InputTimeNode : public Node {
-public:
-  InputTimeNode(unsigned long id);
-  std::string generateGlsl() const override;
-  void drawContent() override;
-};
+extern const std::map<NodeType, NodeDefinition> nodeDefinitions;
 
 #endif

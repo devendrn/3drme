@@ -319,8 +319,6 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           ImGui::DragFloat("Y##roation", &active.rotation.y, s);
           ImGui::DragFloat("Z##roation", &active.rotation.z, s);
         }
-        // if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen)) {
-        // }
       }
     }
     ImGui::End();
@@ -333,25 +331,25 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         if (ImGui::BeginMenu("Add")) {
           if (ImGui::BeginMenu("Surface")) {
             if (ImGui::MenuItem("Box"))
-              sdfNodeEditor.addNode<SurfaceCreateBoxNode>();
+              sdfNodeEditor.addNode(NodeType::SurfaceCreateBox);
             if (ImGui::MenuItem("Sphere"))
-              sdfNodeEditor.addNode<SurfaceCreateSphereNode>();
+              sdfNodeEditor.addNode(NodeType::SurfaceCreateSphere);
             if (ImGui::MenuItem("Boolean"))
-              sdfNodeEditor.addNode<SurfaceBooleanNode>();
+              sdfNodeEditor.addNode(NodeType::SurfaceBoolean);
             ImGui::EndMenu();
           }
           if (ImGui::BeginMenu("Vec3")) {
             if (ImGui::MenuItem("Translate"))
-              sdfNodeEditor.addNode<Vec3TranslateNode>();
+              sdfNodeEditor.addNode(NodeType::Vec3Translate);
             if (ImGui::MenuItem("Scale"))
-              sdfNodeEditor.addNode<Vec3ScaleNode>();
+              sdfNodeEditor.addNode(NodeType::Vec3Scale);
             ImGui::EndMenu();
           }
           if (ImGui::BeginMenu("Input")) {
             if (ImGui::MenuItem("Position"))
-              sdfNodeEditor.addNode<InputPosNode>();
+              sdfNodeEditor.addNode(NodeType::InputPosition);
             if (ImGui::MenuItem("Time"))
-              sdfNodeEditor.addNode<InputTimeNode>();
+              sdfNodeEditor.addNode(NodeType::InputTime);
             ImGui::EndMenu();
           }
           ImGui::EndMenu();

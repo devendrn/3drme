@@ -40,15 +40,12 @@ public:
 
   void show();
 
-  template <typename NodeType> void addNode() {
-    nodes.push_back(std::make_unique<NodeType>(nextId++));
-    nextId += nodes.back()->getPinCount();
-  }
-
   void generateGlslCode(std::string& surface, std::string& sky) const;
 
   void saveGraph(SerializableGraph& graph);
   void loadGraph(SerializableGraph& graph);
+
+  void addNode(NodeType type);
 
 private:
   std::vector<std::unique_ptr<Node>> nodes;
@@ -56,13 +53,13 @@ private:
 
   ed::EditorContext* editor = nullptr;
 
-  OutputNode* output;
+  Node* output;
 
   unsigned long nextId = 1;
 
   Node* findNode(ed::NodeId id) const;
   Pin* findPin(ed::PinId id) const;
-  bool isInvalidPinLink(Pin* a, Pin* b) const;
+  bool isInvalidPinLink(const Pin* a, const Pin* b) const;
 
   void manageCreation();
   void manageDeletion();

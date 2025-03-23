@@ -11,8 +11,8 @@
 SdfNodeEditor::SdfNodeEditor() {
   ed::Config config;
   editor = ed::CreateEditor(&config);
-  addNode<OutputNode>();
-  output = dynamic_cast<OutputNode*>(nodes.back().get());
+  addNode(NodeType::Output);
+  output = nodes.back().get();
 }
 
 SdfNodeEditor::~SdfNodeEditor() { ed::DestroyEditor(editor); }
@@ -25,7 +25,7 @@ void SdfNodeEditor::show() {
     node->draw();
 
   for (auto& link : links)
-    ed::Link(link.ID, link.StartPinID, link.EndPinID);
+    ed::Link(link.id, link.StartPinId, link.EndPinId);
 
   manageCreation();
   manageDeletion();
@@ -34,39 +34,34 @@ void SdfNodeEditor::show() {
 }
 
 void SdfNodeEditor::generateGlslCode(std::string& surface, std::string& sky) const {
-  surface = output->generateGlsl();
-  sky = output->generateSkyGlsl();
+  surface = output->generateGlsl(0);
+  sky = output->generateGlsl(1);
 }
 
 Node* SdfNodeEditor::findNode(ed::NodeId id) const {
   for (const auto& node : nodes) {
-    if (node->ID == id)
+    if (node->getId() == id)
       return node.get();
   }
   return nullptr;
 }
 
-Pin* SdfNodeEditor::findPin(ed::PinId id) const {
+Pin* SdfNodeEditor::findPin(const ed::PinId id) const {
   if (!id)
     return nullptr;
 
   for (const auto& node : nodes) {
-    for (auto& pin : node->inputs) {
-      if (pin.ID == id)
-        return &pin;
-    }
-    for (auto& pin : node->outputs) {
-      if (pin.ID == id)
-        return &pin;
-    }
+    Pin* p = node->getPin(id);
+    if (p != nullptr)
+      return p;
   }
 
   return nullptr;
 }
 
-bool SdfNodeEditor::isInvalidPinLink(Pin* a, Pin* b) const {
-  return a == b || a->Kind == b->Kind || a->Type != b->Type || a->node == b->node || //
-         (a->Kind != PinKind::Output && b->Kind != PinKind::Output);
+bool SdfNodeEditor::isInvalidPinLink(const Pin* a, const Pin* b) const {
+  return a == b || a->kind == b->kind || a->type != b->type || a->node == b->node || //
+         (a->kind != PinKind::Output && b->kind != PinKind::Output);
 }
 
 void SdfNodeEditor::manageCreation() {
@@ -83,7 +78,7 @@ void SdfNodeEditor::manageCreation() {
           ed::RejectNewItem(ImColor(1.0f, 0.0f, 0.0f), 2.0f);
         } else if (ed::AcceptNewItem()) {
           // [In  Out]--->[In  Out]
-          if (startPin->Kind != PinKind::Output) {
+          if (startPin->kind != PinKind::Output) {
             std::swap(startPin, endPin);
             std::swap(startPinId, endPinId);
           }
@@ -91,34 +86,28 @@ void SdfNodeEditor::manageCreation() {
           int index = -1;
           bool alreadyExists = false;
           for (int i = 0; i < links.size(); i++) {
-            if (links[i].EndPinID != endPinId)
+            if (links[i].EndPinId != endPinId)
               continue;
 
             index = i;
 
-            if (links[i].StartPinID == startPinId) {
+            if (links[i].StartPinId == startPinId) {
               alreadyExists = true;
               break;
             }
 
-            if (endPin->Kind == PinKind::Input)
+            if (endPin->kind == PinKind::Input)
               break;
           }
 
           if (!alreadyExists && !startPin->node->isAncestor(endPin->node)) {
-            if (index > -1 && endPin->Kind == PinKind::Input) {
-              if (!endPin->pins.empty()) {
-                endPin->pins[0]->removeLink(endPin);
-              }
-              endPin->pins.clear();
+            if (index > -1 && endPin->kind == PinKind::Input) {
+              endPin->clearLinks();
               links.erase(links.begin() + index);
             }
 
-            startPin->pins.push_back(endPin);
-            endPin->pins.push_back(startPin);
-
-            links.emplace_back(nextId++, startPin->ID, endPin->ID);
-            std::cout << "[Node editor] Add link " << links.back().ID.Get() << ": " << startPin->node->ID.Get() << "->" << endPin->node->ID.Get() << "\n";
+            startPin->addLink(endPin);
+            links.emplace_back(nextId++, startPin->id, endPin->id);
           }
         }
       }
@@ -136,7 +125,7 @@ void SdfNodeEditor::manageDeletion() {
         continue;
 
       for (int i = 0; i < nodes.size(); i++) {
-        if (nodes[i]->ID == nodeId) {
+        if (nodes[i]->getId() == nodeId) {
           if (i == 0) { // reject root output node (i=0)
             ed::RejectDeletedItem();
             continue;
@@ -145,18 +134,18 @@ void SdfNodeEditor::manageDeletion() {
           // delete connected links
           for (int j = 0; j < links.size(); j++) {
             Link& l = links[j];
-            auto& start = findPin(l.StartPinID)->node->ID;
-            auto& end = findPin(l.EndPinID)->node->ID;
-            std::cout << "[Node editor] link " << l.ID.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
+            const auto& start = findPin(l.StartPinId)->node->getId();
+            const auto& end = findPin(l.EndPinId)->node->getId();
+            std::cout << "[Node editor] link " << l.id.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
             if (start == nodeId || end == nodeId) {
-              std::cout << "[Node editor] Delete link " << l.ID.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
+              std::cout << "[Node editor] Delete link " << l.id.Get() << ": " << start.Get() << "->" << end.Get() << "\n";
               links.erase(links.begin() + j);
               j--; // !! don't increment j
             }
           }
 
           // delete node
-          std::cout << "[Node editor] Delete node " << nodes[i]->ID.Get() << ": " << nodes[i]->name << "\n";
+          std::cout << "[Node editor] Delete node " << nodes[i]->getIdLong() << ": " << nodes[i]->getName() << "\n";
           nodes.erase(nodes.begin() + i);
           break;
         }
@@ -171,14 +160,14 @@ void SdfNodeEditor::manageDeletion() {
 
       for (int i = 0; i < links.size(); i++) {
         Link& l = links[i];
-        if (l.ID == linkId) {
-          Pin* start = findPin(l.StartPinID);
-          Pin* end = findPin(l.EndPinID);
+        if (l.id == linkId) {
+          Pin* start = findPin(l.StartPinId);
+          Pin* end = findPin(l.EndPinId);
           if (start != nullptr)
             start->removeLink(end);
           if (end != nullptr)
             end->removeLink(start);
-          std::cout << "[Node editor] Delete link " << l.ID.Get() << ": " << start->node->ID.Get() << "->" << end->node->ID.Get() << "\n";
+          std::cout << "[Node editor] Delete link " << l.id.Get() << ": " << start->node->getIdLong() << "->" << end->node->getIdLong() << "\n";
           links.erase(links.begin() + i);
           break;
         }
@@ -189,37 +178,27 @@ void SdfNodeEditor::manageDeletion() {
 }
 
 std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type) {
-  switch (type) {
-  case NodeType::InputPosition:
-    return std::make_unique<InputPosNode>(id);
-  case NodeType::InputTime:
-    return std::make_unique<InputTimeNode>(id);
-  case NodeType::Vec3Scale:
-    return std::make_unique<Vec3ScaleNode>(id);
-  case NodeType::Vec3Translate:
-    return std::make_unique<Vec3TranslateNode>(id);
-  case NodeType::SurfaceBoolean:
-    return std::make_unique<SurfaceBooleanNode>(id);
-  case NodeType::SurfaceCreateBox:
-    return std::make_unique<SurfaceCreateBoxNode>(id);
-  case NodeType::SurfaceCreateSphere:
-    return std::make_unique<SurfaceCreateSphereNode>(id);
-  case NodeType::Output:
-    return std::make_unique<OutputNode>(id);
-  default:
+  if (!nodeDefinitions.contains(type))
     return nullptr;
+  return std::make_unique<Node>(id, nodeDefinitions.at(type));
+}
+
+void SdfNodeEditor::addNode(NodeType type) {
+  if (nodeDefinitions.contains(type)) {
+    nodes.push_back(std::make_unique<Node>(nextId, nodeDefinitions.at(type)));
+    nextId = nodes.back()->getLastId() + 1;
   }
 }
 
 void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
   for (auto& node : nodes) {
-    auto p = ed::GetNodePosition(node->ID);
-    SerializableNode sNode{node->ID.Get(), node->type, p.x, p.y, node->getData()};
-    graph.nodes.emplace_back(sNode);
+    auto [x, y] = ed::GetNodePosition(node->getId());
+    SerializableNode sNode{node->getIdLong(), node->getType(), x, y, node->getData()};
+    graph.nodes.push_back(std::move(sNode));
   }
   for (auto& link : links) {
-    SerializableLink sLink{link.ID.Get(), link.StartPinID.Get(), link.EndPinID.Get()};
-    graph.links.emplace_back(sLink);
+    SerializableLink sLink{link.id.Get(), link.StartPinId.Get(), link.EndPinId.Get()};
+    graph.links.push_back(std::move(sLink));
   }
 };
 
@@ -236,11 +215,11 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
       continue;
     }
     newNode->setData(serializableNode.data);
-    ed::SetNodePosition(newNode->ID, ImVec2(serializableNode.px, serializableNode.py));
+    ed::SetNodePosition(newNode->getId(), ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));
-    if (nodes.back()->type == NodeType::Output)
-      output = dynamic_cast<OutputNode*>(nodes.back().get());
+    if (nodes.back()->getType() == NodeType::Output)
+      output = nodes.back().get();
   }
   for (auto& serializableLink : graph.links) {
     Pin* startPin = findPin(serializableLink.startPinID);
@@ -251,14 +230,13 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
       continue;
     }
 
-    startPin->pins.push_back(endPin);
-    endPin->pins.push_back(startPin);
+    startPin->addLink(endPin);
     links.emplace_back(serializableLink.ID, serializableLink.startPinID, serializableLink.endPinID);
   }
 
-  nextId = nodes.back()->ID.Get() + nodes.back()->getPinCount(); // nodes will never be empty
+  nextId = nodes.back()->getLastId(); // nodes will never be empty
   if (!links.empty())
-    nextId = std::max(nextId, links.back().ID.Get());
+    nextId = std::max(nextId, links.back().id.Get());
 
   nextId++;
 };
