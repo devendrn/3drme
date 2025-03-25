@@ -17,8 +17,15 @@ enum class NodeType { //
   SurfaceCreateBox,
   SurfaceCreateSphere,
   SurfaceBoolean,
+  Float,
+  FloatSine,
+  Vec3,
+  Vec3Math,
   Vec3Translate,
   Vec3Scale,
+  Vec3Rotate,
+  Vec3Split,
+  Vec3Combine,
   InputTime,
   InputPosition
 };
@@ -44,7 +51,11 @@ public:
   void removeLink(const Pin* target);
   void addLink(Pin* target);
   void clearLinks();
+
+  std::string generateGlsl() const; // only for output pin
 };
+
+ImColor getPinColor(PinType type);
 
 struct PinDefinition {
   std::string name;
@@ -55,62 +66,58 @@ struct PinDefinition {
 struct NodeDefinition {
   NodeType type;
   std::string name;
+  float width = 160.0f;
   std::vector<PinDefinition> inputs;
   std::vector<PinDefinition> outputs;
   std::vector<float> data;
+  // TODO: Node header color: ImColor color;
 
   std::function<void(Node*, const std::vector<float>&)> setData;
   std::function<std::vector<float>(const Node*)> getData;
   std::function<void(Node*)> drawContent;
-  std::function<std::string(const Node*, int)> generateGlsl;
+  std::function<std::string(const Node*, unsigned long)> generateGlsl;
 
   void initializeData(std::vector<float> d) { data = d; };
   void addInput(std::string name, PinType type, bool multi = false) { inputs.push_back({name, type, multi ? PinKind::InputMulti : PinKind::Input}); }
   void addOutput(std::string name, PinType type) { outputs.push_back({name, type, PinKind::Output}); }
   void setDrawContent(std::function<void(Node*)> func) { drawContent = func; }
-  void setGenerateGlsl(std::function<std::string(const Node*, int)> func) { generateGlsl = func; }
+  void setGenerateGlsl(std::function<std::string(const Node*, unsigned long)> func) { generateGlsl = func; }
 };
 
 class Node {
 public:
+  std::vector<Pin> inputs;
+  std::vector<Pin> outputs;
+  std::vector<float> data;
+
   Node(unsigned long id, const NodeDefinition& definition);
   ~Node();
 
   void draw();
   void drawContent();
-  std::string generateGlsl(int variant = 0) const;
-
+  std::string generateGlsl(unsigned long outputPinId) const;
   std::vector<float> getData() const;
   void setData(const std::vector<float>& data);
-
   bool isAncestor(Node* target) const;
-
   void addInputPin(const char* name, PinType type, bool multi = false);
   void addOutputPin(const char* name, PinType type);
   Pin* getPin(ed::PinId id);
-
-  const ed::NodeId& getId() const { return id; };
-  unsigned long getIdLong() const { return id.Get(); };
-  unsigned long getLastId() const { return lastId; };
-  NodeType getType() const { return definition.type; };
-  const std::string& getName() const { return definition.name; };
-  const std::vector<Pin>& getInputs() const { return inputs; };
-  const std::vector<Pin>& getOutputs() const { return outputs; };
-
-  std::vector<Pin> inputs;
-  std::vector<Pin> outputs;
-  std::vector<float> data;
-
+  void drawBaseOutput(int index);
+  void drawBaseInput(int index, std::function<void()> inner = [] {});
   std::string pin0GenerateGlsl(int pinIndex, std::string defaultCode) const;
+
+  const ed::NodeId& getId() const;
+  unsigned long getIdLong() const;
+  unsigned long getLastId() const;
+  NodeType getType() const;
+  const std::string& getName() const;
+  const std::vector<Pin>& getInputs() const;
+  const std::vector<Pin>& getOutputs() const;
 
 private:
   ed::NodeId id;
   unsigned long lastId;
   const NodeDefinition& definition;
-
-  // TODO: Use these
-  ImColor color;
-  ImVec2 size;
 };
 
 struct Link {
@@ -122,5 +129,7 @@ struct Link {
 };
 
 extern const std::map<NodeType, NodeDefinition> nodeDefinitions;
+
+extern const std::map<std::string, std::map<std::string, NodeType>> nodeListTree;
 
 #endif

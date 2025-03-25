@@ -35,16 +35,19 @@ public:
   void setUniformMat3(const std::string& name, const glm::mat3& value) const;
   void setUniformMat4(const std::string& name, const glm::mat4& value) const;
 
+  const std::string& getFragError() const;
+
 private:
   std::string name;
   unsigned int fragmentShader;
   unsigned int vertexShader;
   std::string fsh;
   std::string vsh;
+  std::string fragError;
 
   std::string readFile(const std::string& filePath);
 
-  void loadShader(GLenum type,  const char* code);
+  void loadShader(GLenum type, const char* code);
 
   void attachLinkShaders();
 };

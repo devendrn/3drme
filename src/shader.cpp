@@ -67,6 +67,11 @@ void Shader::loadShader(GLenum type, const char* code) {
   if (success == 0) {
     glGetShaderInfoLog(shader, 1024, NULL, infoLog);
     std::cerr << "ERROR::SHADER::" << (isVertex ? "VERTEX" : "FRAGMENT") << "::COMPILATION_FAILED\n" << infoLog << std::endl;
+    if (!isVertex)
+      fragError = infoLog;
+  } else {
+    if (!isVertex)
+      fragError = "";
   }
 }
 
@@ -86,3 +91,5 @@ void Shader::attachLinkShaders() {
   glDeleteShader(vertexShader);
   glDeleteShader(fragmentShader);
 }
+
+const std::string& Shader::getFragError() const { return fragError; }

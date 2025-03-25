@@ -328,31 +328,14 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
     ImGui::PopStyleVar(1);
     {
       if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("Add")) {
-          if (ImGui::BeginMenu("Surface")) {
-            if (ImGui::MenuItem("Box"))
-              sdfNodeEditor.addNode(NodeType::SurfaceCreateBox);
-            if (ImGui::MenuItem("Sphere"))
-              sdfNodeEditor.addNode(NodeType::SurfaceCreateSphere);
-            if (ImGui::MenuItem("Boolean"))
-              sdfNodeEditor.addNode(NodeType::SurfaceBoolean);
+        for (const auto& [category, list] : nodeListTree) {
+          if (ImGui::BeginMenu(category.c_str())) {
+            for (const auto& [name, node] : list) {
+              if (ImGui::MenuItem(name.c_str()))
+                sdfNodeEditor.addNode(node);
+            }
             ImGui::EndMenu();
           }
-          if (ImGui::BeginMenu("Vec3")) {
-            if (ImGui::MenuItem("Translate"))
-              sdfNodeEditor.addNode(NodeType::Vec3Translate);
-            if (ImGui::MenuItem("Scale"))
-              sdfNodeEditor.addNode(NodeType::Vec3Scale);
-            ImGui::EndMenu();
-          }
-          if (ImGui::BeginMenu("Input")) {
-            if (ImGui::MenuItem("Position"))
-              sdfNodeEditor.addNode(NodeType::InputPosition);
-            if (ImGui::MenuItem("Time"))
-              sdfNodeEditor.addNode(NodeType::InputTime);
-            ImGui::EndMenu();
-          }
-          ImGui::EndMenu();
         }
         if (ImGui::MenuItem("Refresh")) {
           std::string surfaceCode;
@@ -370,6 +353,14 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
           std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
           viewport.shader.reloadFragment();
+        }
+        const auto& shaderError = viewport.shader.getFragError();
+        if (!shaderError.empty()) {
+          ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Compilation Error!");
+          if (ImGui::BeginItemTooltip()) {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "%s", shaderError.c_str());
+            ImGui::EndTooltip();
+          }
         }
       }
       ImGui::EndMenuBar();

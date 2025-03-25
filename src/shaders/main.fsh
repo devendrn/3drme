@@ -64,6 +64,16 @@ struct Surface {
   float selected;
 };
 
+mat3 rmat(vec3 r) {
+  vec3 s = sin(r);
+  vec3 c = cos(r);
+  return mat3(
+    c.y * c.z, s.x * s.y * c.z - c.x * s.z, c.x * s.y * c.z + s.x * s.z,
+    c.y * s.z, s.x * s.y * s.z + c.x * c.z, c.x * s.y * s.z - s.x * c.z,
+    -s.y, s.x * c.y, c.x * c.y
+  );
+}
+
 vec2 smin(float a, float b, float k) {
   float h = 1.0-min(abs(a-b)/(4.0*k), 1.0);
   float w = h*h;

@@ -47,12 +47,12 @@ public:
 
   int width, height;
   int renderWidth, renderHeight;
-  float downscaleFactor = 0.2f;
+  float downscaleFactor = 0.5f;
 
   float cameraSensitivity = 0.2f;
 
   glm::vec2 jitterOffset, previousJitterOffset;
-  float taaFeedbackFactor = 0.95f;
+  float taaFeedbackFactor = 0.92f;
   int frameCounter = 0;
 
   int raymarchingSteps = 32;
