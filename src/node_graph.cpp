@@ -12,7 +12,6 @@ SdfNodeEditor::SdfNodeEditor() {
   ed::Config config;
   editor = ed::CreateEditor(&config);
   addNode(NodeType::Output);
-  output = nodes.back().get();
 }
 
 SdfNodeEditor::~SdfNodeEditor() { ed::DestroyEditor(editor); }
@@ -33,9 +32,10 @@ void SdfNodeEditor::show() {
   ed::End();
 }
 
-void SdfNodeEditor::generateGlslCode(std::string& surface, std::string& sky) const {
-  surface = output->generateGlsl(0);
-  sky = output->generateGlsl(1);
+void SdfNodeEditor::generateGlslCode(std::string& surface, std::string& sky, std::string& lights) const {
+  surface = nodes[0]->generateGlsl(0);
+  sky = nodes[0]->generateGlsl(1);
+  lights = nodes[0]->generateGlsl(2);
 }
 
 Node* SdfNodeEditor::findNode(ed::NodeId id) const {
@@ -218,8 +218,6 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
     ed::SetNodePosition(newNode->getId(), ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));
-    if (nodes.back()->getType() == NodeType::Output)
-      output = nodes.back().get();
   }
   for (auto& serializableLink : graph.links) {
     Pin* startPin = findPin(serializableLink.startPinID);

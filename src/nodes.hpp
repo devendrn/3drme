@@ -26,11 +26,12 @@ enum class NodeType { //
   Vec3Rotate,
   Vec3Split,
   Vec3Combine,
+  LightPoint,
   InputTime,
   InputPosition
 };
 
-enum class PinType { Vec3, Float, Surface };
+enum class PinType { Vec3, Float, Surface, Light };
 enum class PinKind { Output, Input, InputMulti };
 
 class Node;

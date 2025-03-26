@@ -328,19 +328,23 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
     ImGui::PopStyleVar(1);
     {
       if (ImGui::BeginMenuBar()) {
-        for (const auto& [category, list] : nodeListTree) {
-          if (ImGui::BeginMenu(category.c_str())) {
-            for (const auto& [name, node] : list) {
-              if (ImGui::MenuItem(name.c_str()))
-                sdfNodeEditor.addNode(node);
+        if (ImGui::BeginMenu("Add")) {
+          for (const auto& [category, list] : nodeListTree) {
+            if (ImGui::BeginMenu(category.c_str())) {
+              for (const auto& [name, node] : list) {
+                if (ImGui::MenuItem(name.c_str()))
+                  sdfNodeEditor.addNode(node);
+              }
+              ImGui::EndMenu();
             }
-            ImGui::EndMenu();
           }
+          ImGui::EndMenu();
         }
         if (ImGui::MenuItem("Refresh")) {
           std::string surfaceCode;
           std::string skyCode;
-          sdfNodeEditor.generateGlslCode(surfaceCode, skyCode);
+          std::string lightsCode;
+          sdfNodeEditor.generateGlslCode(surfaceCode, skyCode, lightsCode);
 
           viewport.shader.resetFshSource();
           std::string& code = viewport.shader.fshEdited;
@@ -349,9 +353,12 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           code.insert(line, skyCode);
           line = code.find("// !sdf_inline", line);
           code.insert(line, surfaceCode);
+          line = code.find("// !lights_inline", line);
+          code.insert(line, lightsCode);
 
           std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
           std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
+          std::cout << "[Node editor] Inline shader code: Lights\n" << lightsCode << "\n";
           viewport.shader.reloadFragment();
         }
         const auto& shaderError = viewport.shader.getFragError();

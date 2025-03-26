@@ -64,6 +64,12 @@ struct Surface {
   float selected;
 };
 
+struct Light {
+  vec3 position;
+  vec3 color;
+  int shadowSteps;
+};
+
 mat3 rmat(vec3 r) {
   vec3 s = sin(r);
   vec3 c = cos(r);
@@ -229,20 +235,75 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     dist += stepLength;
   }
 
+  Light lights[] = Light[](
+    Light(vec3(0.0),vec3(0.0),0) // unused
+    // !lights_inline
+  );
+
+  vec3 lightGlow = vec3(0.0);
+  for (int i = 1; i<lights.length(); i++) {
+    Light l = lights[i];
+    vec3 ab = ro - l.position;
+    float pd = length(ro-pos);
+    float d = length(ab);
+    if (pd < d || dot(ab, rd)>0.0) continue;
+    vec3 ac = (ro + rd*d) - l.position;
+    vec3 abd = cross(ab, ac);
+    float ar = dot(abd, abd)/d;
+    lightGlow += l.color/(0.001+30.0*ar*ar);
+  }
+
   if (dist > TMAX || candidateError > PIXEL_RADIUS) {
-    return renderSky(rd*TMAX, uTime);
+    vec3 col = renderSky(rd*TMAX, uTime);
+    col += lightGlow;
+    return col;
   }
 
   vec3 col = s.color;
   vec3 nrm = calcNormal(pos, s.dist);
   float cosr = 1.0-max(dot(nrm, rd), 0.0);
 
-  col *= 0.1 + 0.9*max(dot(normalize(-vec3(0.8,1.0,0.5)), nrm), 0.0);
+  vec3 lighting = vec3(0.0);
+  for (int i = 1; i<lights.length(); i++) {
+    Light l = lights[i];
+    vec3 lightDir = normalize(pos - l.position);
+    vec3 reflectDir = reflect(-lightDir, nrm);
 
+    vec3 diffuse =  max(dot(lightDir, nrm), 0.0)*l.color;
+    vec3 specular = 10.0*pow(max(dot(rd, reflectDir), 0.0), 32.0)*l.color;
+
+    float dr = length(pos - l.position);
+
+    float dist = 0.2;
+    float md = 1000.0;
+    for (int i=0; i < l.shadowSteps; i++) {
+      vec3 p = pos - lightDir * dist;
+      Surface s = sceneSdfSurf(p);
+      md = min(md, s.dist);
+      if (s.dist < 0.001) {
+        break;
+      } else if (s.dist > 10.0) {
+        break;
+      }
+      dist += max(s.dist, 0.1);
+    }
+    float shadow = smoothstep(0.0, 0.05, md);
+    shadow /= (1.0+dr*dr);
+
+    lighting += (diffuse*col + specular)*shadow;
+  }
+  vec3 ambient = vec3(0.1);
+  lighting += col*ambient;
+
+  col = lighting;
+
+  // legacy
   float selfactor = 0.1 + 0.2*cosr+ 0.7*cosr*cosr*cosr;
   selfactor *= s.selected;
   col = mix(col, vec3(1.0, 0.7, 0.3), selfactor);
   col *= 1.0+selfactor;
+
+  col += lightGlow;
 
   return col;
 }
@@ -263,6 +324,10 @@ vec3 render(vec2 uv) {
   vec3 ray_dir = normalize(ray_frontplane-ray_backplane);
 
   vec3 c = rayMarch(ray_org, ray_dir);
+
+  const float ws = 0.063;
+  c = c*(1.0+c*ws)/(1.0+c);
+
   return c;
 }
 

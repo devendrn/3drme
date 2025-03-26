@@ -174,9 +174,11 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     NodeDefinition nd{NodeType::Output, "Output"};
     nd.addInput("Surface", PinType::Surface);
     nd.addInput("Sky", PinType::Vec3);
+    nd.addInput("Lights", PinType::Light, true);
     nd.setDrawContent([](Node* node) {
       node->drawBaseInput(0);
       node->drawBaseInput(1);
+      node->drawBaseInput(2);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long variant) -> std::string {
       // surface variant
@@ -187,10 +189,19 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
         return std::format("s={};", i0.pins[0]->generateGlsl());
       }
       // sky variant
-      const Pin& i1 = node->inputs[1];
-      if (i1.pins.empty())
+      if (variant == 1) {
+        const Pin& i1 = node->inputs[1];
+        if (i1.pins.empty())
+          return "";
+      }
+      // lights variant
+      const Pin& i2 = node->inputs[2];
+      if (i2.pins.empty())
         return "";
-      return std::format("s={};", i1.pins[0]->generateGlsl());
+      std::string code;
+      for (int i = 0; i < i2.pins.size(); i++)
+        code += "," + i2.pins[i]->generateGlsl();
+      return code;
     });
     defs.insert({nd.type, nd});
   }
@@ -482,6 +493,43 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
+    NodeDefinition nd{NodeType::LightPoint, "Light Point"};
+    const int colLoc = 0;
+    const int posLoc = 3;
+    const int intensityLoc = 6;
+    const int stepsLoc = 7;
+    nd.initializeData({
+        1, 1, 1, //
+        0, 1, 0, //
+        10,      //
+        16       //
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Intensity", PinType::Float);
+    nd.addInput("Position", PinType::Vec3);
+    nd.addOutput("", PinType::Light);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      int stepsInt = static_cast<int>(node->data[stepsLoc]);
+      ImGui::Text("Steps");
+      ImGui::DragInt("##steps", &stepsInt);
+      node->data[stepsLoc] = static_cast<float>(stepsInt);
+      node->drawBaseInput(0);
+      ImGui::DragFloat3("##col", &node->data[colLoc]);
+      node->drawBaseInput(1);
+      ImGui::DragFloat("##intensity", &node->data[intensityLoc]);
+      node->drawBaseInput(2);
+      ImGui::DragFloat3("##pos", &node->data[posLoc]);
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      std::string colorCode = node->pin0GenerateGlsl(0, toVec3String(&node->data[colLoc]));
+      std::string intensityCode = node->pin0GenerateGlsl(1, std::format("{}", node->data[intensityLoc]));
+      std::string posCode = node->pin0GenerateGlsl(2, toVec3String(&node->data[posLoc]));
+      return std::format("Light({},{}*{},{})", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]));
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
     NodeDefinition nd{NodeType::InputTime, "Time", 70};
     nd.addOutput("", PinType::Float);
     nd.setDrawContent([](Node* node) { node->drawBaseOutput(0); });
@@ -528,7 +576,12 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
             {"Combine", NodeType::Vec3Combine},
         },
     },
-
+    {
+        "Light",
+        {
+            {"Point", NodeType::LightPoint},
+        },
+    },
     {
         "Input",
         {
