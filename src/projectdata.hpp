@@ -12,9 +12,9 @@ public:
   ProjectData();
   ~ProjectData();
 
-  void saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor);
-  void saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath);
-  void loadProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath);
+  void saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor);
+  void saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor, const std::string& filepath);
+  void loadProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor, const std::string& filepath);
 
   bool hasLoadedProjectFile() const;
 

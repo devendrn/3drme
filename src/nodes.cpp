@@ -167,6 +167,8 @@ void Node::drawBaseInput(int index, std::function<void()> inner) {
 std::string toVec3String(float x, float y, float z) { return std::format("vec3({},{},{})", x, y, z); }
 std::string toVec3String(const float* data) { return toVec3String(*(data), *(data + 1), *(data + 2)); }
 
+void drawColorEdit(float* data) { ImGui::ColorEdit3("##col", data, ImGuiColorEditFlags_NoPicker | ImGuiColorEditFlags_Float | ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoOptions); }
+
 // use constexpr ?
 std::map<NodeType, NodeDefinition> initDefinitions() {
   std::map<NodeType, NodeDefinition> defs;
@@ -223,7 +225,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
       node->drawBaseInput(0, [&] {
-        ImGui::ColorEdit3("##col", &node->data[colLoc]);
+        drawColorEdit(&node->data[colLoc]);
         ImGui::Dummy(ImVec2(0, 4));
       });
       node->drawBaseInput(1, [&] {
@@ -260,7 +262,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
       node->drawBaseInput(0, [&] {
-        ImGui::ColorEdit3("##col", &node->data[colLoc]);
+        drawColorEdit(&node->data[colLoc]);
         ImGui::Dummy(ImVec2(0, 4));
       });
       node->drawBaseInput(1, [&] {

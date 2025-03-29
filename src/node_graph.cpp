@@ -5,18 +5,19 @@
 
 #include <imgui_node_editor.h>
 
+#include "imgui.h"
 #include "node_graph.hpp"
 #include "nodes.hpp"
 
-SdfNodeEditor::SdfNodeEditor() {
+NodeEditor::NodeEditor() {
   ed::Config config;
   editor = ed::CreateEditor(&config);
   addNode(NodeType::Output);
 }
 
-SdfNodeEditor::~SdfNodeEditor() { ed::DestroyEditor(editor); }
+NodeEditor::~NodeEditor() { ed::DestroyEditor(editor); }
 
-void SdfNodeEditor::show() {
+void NodeEditor::show() {
   ed::SetCurrentEditor(editor);
   ed::Begin("SDF Node Editor");
 
@@ -29,16 +30,36 @@ void SdfNodeEditor::show() {
   manageCreation();
   manageDeletion();
 
+  ed::Suspend();
+  if (ed::ShowBackgroundContextMenu()) {
+    ImGui::SetCursorScreenPos(ImGui::GetMousePos());
+    ImGui::OpenPopup("Create new node");
+  }
+  if (ImGui::BeginPopup("Create new node")) {
+    ImGui::Text("Add node");
+    for (const auto& [category, list] : nodeListTree) {
+      if (ImGui::BeginMenu(category.c_str())) {
+        for (const auto& [name, node] : list) {
+          if (ImGui::MenuItem(name.c_str()))
+            addNode(node);
+        }
+        ImGui::EndMenu();
+      }
+    }
+    ImGui::EndPopup();
+  }
+  ed::Resume();
+
   ed::End();
 }
 
-void SdfNodeEditor::generateGlslCode(std::string& surface, std::string& sky, std::string& lights) const {
+void NodeEditor::generateGlslCode(std::string& surface, std::string& sky, std::string& lights) const {
   surface = nodes[0]->generateGlsl(0);
   sky = nodes[0]->generateGlsl(1);
   lights = nodes[0]->generateGlsl(2);
 }
 
-Node* SdfNodeEditor::findNode(ed::NodeId id) const {
+Node* NodeEditor::findNode(ed::NodeId id) const {
   for (const auto& node : nodes) {
     if (node->getId() == id)
       return node.get();
@@ -46,7 +67,7 @@ Node* SdfNodeEditor::findNode(ed::NodeId id) const {
   return nullptr;
 }
 
-Pin* SdfNodeEditor::findPin(const ed::PinId id) const {
+Pin* NodeEditor::findPin(const ed::PinId id) const {
   if (!id)
     return nullptr;
 
@@ -59,12 +80,12 @@ Pin* SdfNodeEditor::findPin(const ed::PinId id) const {
   return nullptr;
 }
 
-bool SdfNodeEditor::isInvalidPinLink(const Pin* a, const Pin* b) const {
+bool NodeEditor::isInvalidPinLink(const Pin* a, const Pin* b) const {
   return a == b || a->kind == b->kind || a->type != b->type || a->node == b->node || //
          (a->kind != PinKind::Output && b->kind != PinKind::Output);
 }
 
-void SdfNodeEditor::manageCreation() {
+void NodeEditor::manageCreation() {
   if (ed::BeginCreate()) {
     ed::PinId startPinId = 0;
     ed::PinId endPinId = 0;
@@ -116,7 +137,7 @@ void SdfNodeEditor::manageCreation() {
   ed::EndCreate();
 }
 
-void SdfNodeEditor::manageDeletion() {
+void NodeEditor::manageDeletion() {
   if (ed::BeginDelete()) {
     // delete nodes
     ed::NodeId nodeId = 0;
@@ -177,20 +198,20 @@ void SdfNodeEditor::manageDeletion() {
   }
 }
 
-std::unique_ptr<Node> SdfNodeEditor::createNode(unsigned long id, NodeType type) {
+std::unique_ptr<Node> NodeEditor::createNode(unsigned long id, NodeType type) {
   if (!nodeDefinitions.contains(type))
     return nullptr;
   return std::make_unique<Node>(id, nodeDefinitions.at(type));
 }
 
-void SdfNodeEditor::addNode(NodeType type) {
+void NodeEditor::addNode(NodeType type) {
   if (nodeDefinitions.contains(type)) {
     nodes.push_back(std::make_unique<Node>(nextId, nodeDefinitions.at(type)));
     nextId = nodes.back()->getLastId() + 1;
   }
 }
 
-void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
+void NodeEditor::saveGraph(SerializableGraph& graph) {
   for (auto& node : nodes) {
     auto [x, y] = ed::GetNodePosition(node->getId());
     SerializableNode sNode{node->getIdLong(), node->getType(), x, y, node->getData()};
@@ -202,7 +223,7 @@ void SdfNodeEditor::saveGraph(SerializableGraph& graph) {
   }
 };
 
-void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
+void NodeEditor::loadGraph(SerializableGraph& graph) {
   nodes.clear();
   links.clear();
   nextId = 1;
@@ -238,3 +259,10 @@ void SdfNodeEditor::loadGraph(SerializableGraph& graph) {
 
   nextId++;
 };
+
+const std::vector<std::unique_ptr<Node>>& NodeEditor::getNodes() const { return nodes; }
+
+void NodeEditor::goToNode(ed::NodeId id) {
+  ed::SelectNode(id);
+  ed::NavigateToSelection();
+}

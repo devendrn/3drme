@@ -28,7 +28,7 @@ ProjectData::ProjectData() { nodeEditorContext = ax::NodeEditor::CreateEditor();
 
 ProjectData::~ProjectData() { ax::NodeEditor::DestroyEditor(nodeEditorContext); }
 
-void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath) {
+void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor, const std::string& filepath) {
   std::ofstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file for writing: " << filepath << std::endl;
@@ -48,13 +48,13 @@ void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEdito
   loadedFilePath = filepath;
 }
 
-void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor) {
+void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor) {
   if (!loadedFile)
     return;
   saveProjectFile(scene, viewport, sdfnodeeditor, loadedFilePath);
 }
 
-void ProjectData::loadProjectFile(Scene& scene, Viewport& viewport, SdfNodeEditor& sdfnodeeditor, const std::string& filepath) {
+void ProjectData::loadProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor, const std::string& filepath) {
   std::ifstream file(filepath, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file for reading: " << filepath << std::endl;

@@ -1,11 +1,14 @@
 #include "ui.hpp"
 
+#include <cfloat>
+#include <format>
 #include <iostream>
 
 #include <glm/fwd.hpp>
 #include <imfilebrowser.h>
 #include <imgui.h>
 
+#include "imgui_node_editor.h"
 #include "node_graph.hpp"
 #include "nodes.hpp"
 #include "projectdata.hpp"
@@ -130,7 +133,29 @@ void setupUi(GLFWwindow* window) {
   updateWindowTitle(window, a);
 }
 
-void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, SdfNodeEditor& sdfNodeEditor) {
+void reloadNodeScene(NodeEditor& nodeEditor, Shader& shader) {
+  std::string surfaceCode;
+  std::string skyCode;
+  std::string lightsCode;
+  nodeEditor.generateGlslCode(surfaceCode, skyCode, lightsCode);
+
+  shader.resetFshSource();
+  std::string& code = shader.fshEdited;
+
+  auto line = code.find("// !sky_inline");
+  code.insert(line, skyCode);
+  line = code.find("// !sdf_inline", line);
+  code.insert(line, surfaceCode);
+  line = code.find("// !lights_inline", line);
+  code.insert(line, lightsCode);
+
+  std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
+  std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
+  std::cout << "[Node editor] Inline shader code: Lights\n" << lightsCode << "\n";
+  shader.reloadFragment();
+}
+
+void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, NodeEditor& nodeEditor) {
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();
   ImGui::NewFrame();
@@ -154,10 +179,14 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
       if ((io.KeyShift || !pd.hasLoadedProjectFile())) {
         saveFileDialog.Open();
       } else {
-        pd.saveProjectFile(scene, viewport, sdfNodeEditor);
+        pd.saveProjectFile(scene, viewport, nodeEditor);
       }
     } else if (ImGui::IsKeyPressed(ImGuiKey_O)) {
       loadFileDialog.Open();
+    } else if (ImGui::IsKeyPressed(ImGuiKey_R)) {
+      viewport.shader.reloadFshSource();
+      reloadNodeScene(nodeEditor, viewport.shader);
+      viewport.shader.reloadFragment();
     }
   }
 
@@ -184,7 +213,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
           loadFileDialog.Open();
         }
         if (ImGui::MenuItem("Save", "Ctrl+S", false, pd.hasLoadedProjectFile())) {
-          pd.saveProjectFile(scene, viewport, sdfNodeEditor);
+          pd.saveProjectFile(scene, viewport, nodeEditor);
         }
         if (ImGui::MenuItem("Save as", "Ctrl+Shift+S")) {
           saveFileDialog.Open();
@@ -210,13 +239,14 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
 
       if (loadFileDialog.HasSelected()) {
         std::string path = loadFileDialog.GetSelected();
-        pd.loadProjectFile(scene, viewport, sdfNodeEditor, path);
+        pd.loadProjectFile(scene, viewport, nodeEditor, path);
+        reloadNodeScene(nodeEditor, viewport.shader);
         updateWindowTitle(window, path);
         loadFileDialog.ClearSelected();
       }
       if (saveFileDialog.HasSelected()) {
         std::string path = saveFileDialog.GetSelected();
-        pd.saveProjectFile(scene, viewport, sdfNodeEditor, saveFileDialog.GetSelected());
+        pd.saveProjectFile(scene, viewport, nodeEditor, saveFileDialog.GetSelected());
         updateWindowTitle(window, path);
         saveFileDialog.ClearSelected();
       }
@@ -333,34 +363,17 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
             if (ImGui::BeginMenu(category.c_str())) {
               for (const auto& [name, node] : list) {
                 if (ImGui::MenuItem(name.c_str()))
-                  sdfNodeEditor.addNode(node);
+                  nodeEditor.addNode(node);
               }
               ImGui::EndMenu();
             }
           }
           ImGui::EndMenu();
         }
-        if (ImGui::MenuItem("Refresh")) {
-          std::string surfaceCode;
-          std::string skyCode;
-          std::string lightsCode;
-          sdfNodeEditor.generateGlslCode(surfaceCode, skyCode, lightsCode);
 
-          viewport.shader.resetFshSource();
-          std::string& code = viewport.shader.fshEdited;
+        if (ImGui::MenuItem("Refresh"))
+          reloadNodeScene(nodeEditor, viewport.shader);
 
-          auto line = code.find("// !sky_inline");
-          code.insert(line, skyCode);
-          line = code.find("// !sdf_inline", line);
-          code.insert(line, surfaceCode);
-          line = code.find("// !lights_inline", line);
-          code.insert(line, lightsCode);
-
-          std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
-          std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
-          std::cout << "[Node editor] Inline shader code: Lights\n" << lightsCode << "\n";
-          viewport.shader.reloadFragment();
-        }
         const auto& shaderError = viewport.shader.getFragError();
         if (!shaderError.empty()) {
           ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.4f, 1.0f), "Compilation Error!");
@@ -372,7 +385,29 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
       }
       ImGui::EndMenuBar();
 
-      sdfNodeEditor.show();
+      ImVec2 cpos = ImGui::GetCursorPos();
+      nodeEditor.show();
+
+      ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 0);
+      ImGui::SetCursorScreenPos(cpos + ImVec2(0, 0));
+      ImGui::BeginChild("SidebarOverlay", ImVec2(150, 0), ImGuiChildFlags_Border, ImGuiWindowFlags_NoScrollbar);
+      {
+        ImGui::Dummy(ImVec2(0, 20));
+        ImGui::Text("Go to node:");
+        if (ImGui::BeginListBox("##listbox 2", ImVec2(-FLT_MIN, -FLT_MIN))) {
+          for (const auto& n : nodeEditor.getNodes()) {
+            auto id = n->getId();
+            bool isSelected = ed::IsNodeSelected(id);
+
+            ImGuiSelectableFlags flags = isSelected ? ImGuiSelectableFlags_Highlight : 0;
+            if (ImGui::Selectable(std::format("[{}] {}", id.Get(), n->getName()).c_str(), isSelected, flags))
+              nodeEditor.goToNode(id);
+          }
+          ImGui::EndListBox();
+        }
+      }
+      ImGui::EndChild();
+      ImGui::PopStyleVar();
     }
     ImGui::End();
   }

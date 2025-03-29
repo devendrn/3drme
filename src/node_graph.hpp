@@ -33,10 +33,10 @@ struct SerializableGraph {
   template <class Archive> void serialize(Archive& archive) { archive(nodes, links); }
 };
 
-class SdfNodeEditor {
+class NodeEditor {
 public:
-  SdfNodeEditor();
-  ~SdfNodeEditor();
+  NodeEditor();
+  ~NodeEditor();
 
   void show();
 
@@ -46,6 +46,9 @@ public:
   void loadGraph(SerializableGraph& graph);
 
   void addNode(NodeType type);
+  void goToNode(ed::NodeId id);
+
+  const std::vector<std::unique_ptr<Node>>& getNodes() const;
 
 private:
   std::vector<std::unique_ptr<Node>> nodes;
