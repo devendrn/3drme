@@ -67,11 +67,11 @@ struct PinDefinition {
 struct NodeDefinition {
   NodeType type;
   std::string name;
+  ImColor color;
   float width = 160.0f;
   std::vector<PinDefinition> inputs;
   std::vector<PinDefinition> outputs;
   std::vector<float> data;
-  // TODO: Node header color: ImColor color;
 
   std::function<void(Node*, const std::vector<float>&)> setData;
   std::function<std::vector<float>(const Node*)> getData;

@@ -100,17 +100,28 @@ std::string Node::pin0GenerateGlsl(int pinIndex, std::string defaultCode) const 
 void Node::draw() {
   ed::BeginNode(id);
   {
-    // TODO: Header color, centering
     ImGui::PushID(&id);
     ImGui::PushItemWidth(definition.width);
 
     ImGui::Text("%s", definition.name.c_str());
+    ImGui::Dummy(ImVec2(definition.width - 32, 4));
     drawContent();
 
     ImGui::PopItemWidth();
     ImGui::PopID();
   }
   ed::EndNode();
+
+  auto style = ed::GetStyle();
+  ImVec2 headerMin = ImGui::GetItemRectMin();
+  ImVec2 headerMax = ImGui::GetItemRectMax();
+  headerMax.y = headerMin.y + 30;
+  ImVec2 borderOffset = ImVec2(1, 1) * style.NodeBorderWidth;
+  headerMin += borderOffset;
+  headerMax -= borderOffset;
+  auto* drawList = ed::GetNodeBackgroundDrawList(id);
+  drawList->AddRectFilled(headerMin, headerMax, definition.color, style.NodeRounding - style.NodeBorderWidth, ImDrawFlags_RoundCornersTop);
+  drawList->AddLine(ImVec2(headerMin.x - borderOffset.x, headerMax.y), headerMax, ImColor(style.Colors[ed::StyleColor_NodeBorder]), style.NodeBorderWidth);
 }
 
 const ed::NodeId& Node::getId() const { return id; };
@@ -132,7 +143,7 @@ void Node::setData(const std::vector<float>& data) { this->data = data; }
 void Node::drawBaseOutput(int index) {
   auto& pin = outputs[index];
   float textWidth = ImGui::CalcTextSize(pin.name.c_str()).x;
-  ImGui::Dummy(ImVec2(definition.width - textWidth - 30, 8));
+  ImGui::Dummy(ImVec2(definition.width - textWidth - 32, 8));
   ImGui::SameLine();
   ed::BeginPin(pin.id, ed::PinKind::Output);
   {
@@ -171,9 +182,18 @@ void drawColorEdit(float* data) { ImGui::ColorEdit3("##col", data, ImGuiColorEdi
 
 // use constexpr ?
 std::map<NodeType, NodeDefinition> initDefinitions() {
+  const float sat = 0.8;
+  const float val = 0.3;
+  ImColor surfaceColor = ImColor::HSV(0.0, sat, val);
+  ImColor vec3Color = ImColor::HSV(0.1, sat, val);
+  ImColor floatColor = ImColor::HSV(0.2, sat, val);
+  ImColor inputsColor = ImColor::HSV(0.3, sat, val);
+  ImColor lightsColor = ImColor::HSV(0.4, sat, val);
+  ImColor outputColor = ImColor::HSV(0.5, sat, val);
+
   std::map<NodeType, NodeDefinition> defs;
   {
-    NodeDefinition nd{NodeType::Output, "Output"};
+    NodeDefinition nd{NodeType::Output, "Output", outputColor, 120};
     nd.addInput("Surface", PinType::Surface);
     nd.addInput("Sky", PinType::Vec3);
     nd.addInput("Lights", PinType::Light, true);
@@ -208,7 +228,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::SurfaceCreateSphere, "Surface Sphere"};
+    NodeDefinition nd{NodeType::SurfaceCreateSphere, "Surface Sphere", surfaceColor};
     const int colLoc = 0;
     const int posLoc = 3;
     const int radiusLoc = 6;
@@ -247,7 +267,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::SurfaceCreateBox, "Surface Box"};
+    NodeDefinition nd{NodeType::SurfaceCreateBox, "Surface Box", surfaceColor};
     const int colLoc = 0;
     const int posLoc = 3;
     const int sizeLoc = 6;
@@ -296,7 +316,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
   {
     const int typeLoc = 0;
     const int smoothLoc = 1;
-    NodeDefinition nd{NodeType::SurfaceBoolean, "Surface Boolean", 100};
+    NodeDefinition nd{NodeType::SurfaceBoolean, "Surface Boolean", surfaceColor, 100};
     nd.initializeData({0, 0});
     nd.addInput("Input A", PinType::Surface);
     nd.addInput("Input B,C..", PinType::Surface, true);
@@ -347,7 +367,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Float, "Float", 70};
+    NodeDefinition nd{NodeType::Float, "Float", floatColor, 70};
     nd.initializeData({0});
     nd.addOutput("Output", PinType::Float);
     nd.setDrawContent([](Node* node) {
@@ -358,7 +378,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::FloatSine, "Float Sine", 70};
+    NodeDefinition nd{NodeType::FloatSine, "Float Sine", floatColor, 70};
     nd.initializeData({1});
     nd.addInput("Input", PinType::Float);
     nd.addOutput("Output", PinType::Float);
@@ -371,7 +391,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3, "Vec3"};
+    NodeDefinition nd{NodeType::Vec3, "Vec3", vec3Color};
     nd.initializeData({0});
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
@@ -382,7 +402,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Math, "Vec3 Math", 80};
+    NodeDefinition nd{NodeType::Vec3Math, "Vec3 Math", vec3Color, 80};
     nd.initializeData({0});
     nd.addInput("A", PinType::Vec3);
     nd.addInput("B", PinType::Vec3);
@@ -412,7 +432,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Translate, "Vec3 Translate"};
+    NodeDefinition nd{NodeType::Vec3Translate, "Vec3 Translate", vec3Color};
     nd.initializeData({0, 0, 0});
     nd.addInput("Input", PinType::Vec3);
     nd.addOutput("Output", PinType::Vec3);
@@ -428,7 +448,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Scale, "Vec3 Scale"};
+    NodeDefinition nd{NodeType::Vec3Scale, "Vec3 Scale", vec3Color};
     nd.initializeData({1, 1, 1});
     nd.addInput("Input", PinType::Vec3);
     nd.addOutput("Output", PinType::Vec3);
@@ -444,7 +464,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Rotate, "Vec3 Rotate"};
+    NodeDefinition nd{NodeType::Vec3Rotate, "Vec3 Rotate", vec3Color};
     nd.initializeData({0, 0, 0});
     nd.addInput("Input", PinType::Vec3);
     nd.addOutput("Output", PinType::Vec3);
@@ -460,7 +480,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Split, "Vec3 Split", 100};
+    NodeDefinition nd{NodeType::Vec3Split, "Vec3 Split", vec3Color, 100};
     nd.addInput("Input", PinType::Vec3);
     nd.addOutput("X", PinType::Float);
     nd.addOutput("Y", PinType::Float);
@@ -484,7 +504,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Combine, "Vec3 Combine", 100};
+    NodeDefinition nd{NodeType::Vec3Combine, "Vec3 Combine", vec3Color, 100};
     nd.addInput("X", PinType::Float);
     nd.addInput("Y", PinType::Float);
     nd.addInput("Y", PinType::Float);
@@ -504,7 +524,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::LightPoint, "Light Point"};
+    NodeDefinition nd{NodeType::LightPoint, "Light Point", lightsColor};
     const int colLoc = 0;
     const int posLoc = 3;
     const int intensityLoc = 6;
@@ -541,14 +561,14 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::InputTime, "Time", 70};
+    NodeDefinition nd{NodeType::InputTime, "Time", inputsColor, 70};
     nd.addOutput("", PinType::Float);
     nd.setDrawContent([](Node* node) { node->drawBaseOutput(0); });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return "t"; });
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::InputPosition, "Position", 70};
+    NodeDefinition nd{NodeType::InputPosition, "Position", inputsColor, 70};
     nd.addOutput("", PinType::Vec3);
     nd.setDrawContent([](Node* node) { node->drawBaseOutput(0); });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return "pos"; });
