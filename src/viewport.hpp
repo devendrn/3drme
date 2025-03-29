@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 #include <GLFW/glfw3.h>
+#include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 
 #include "camera.hpp"
@@ -59,6 +60,10 @@ public:
   float raymarchingClipStart = 0.5f;
   float raymarchingClipEnd = 20.0f;
   float raymarchingPixelRadius = 0.002f;
+
+  glm::vec3 ambientColor = glm::vec3(1.0);
+  float occlusionFactor = 1.0;
+  float occlusionRadius = 0.2;
 
   static constexpr int maxFrames = 128;
   std::array<glm::vec2, maxFrames> haltonSequence;

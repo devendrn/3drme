@@ -99,6 +99,8 @@ void Viewport::render() {
   shader.setUniformFloat("uTime", static_cast<float>(glfwGetTime()));
   shader.setUniformVec2("uResolution", glm::vec2(renderWidth, renderHeight));
   shader.setUniformVec2("uJitterOffset", jitterOffset);
+  shader.setUniformVec2("uOcclusionParams", glm::vec2(occlusionFactor, occlusionRadius));
+  shader.setUniformVec3("uAmbientColor", ambientColor);
   shader.setUniformVec3("uProj", camera.getProjVec());
   shader.setUniformVec3("uRaymarchingParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
   shader.setUniformMat3("uViewRot", camera.getViewRotMat());

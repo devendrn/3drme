@@ -310,6 +310,11 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         ImGui::SliderFloat("Pixel radius", &viewport.raymarchingPixelRadius, 0.0001, 0.01, "%.4f");
         ImGui::SliderFloat("TAAU Feedback", &viewport.taaFeedbackFactor, 0.0, 0.98);
       }
+      if (ImGui::CollapsingHeader("World", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::ColorEdit3("Ambient color", &viewport.ambientColor.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR);
+        ImGui::DragFloat("Occlusion factor", &viewport.occlusionFactor, 0.01, 0.0, 1.0);
+        ImGui::DragFloat("Occlusion radius", &viewport.occlusionRadius, 0.01, 0.0, 2.0);
+      }
     }
     ImGui::End();
 

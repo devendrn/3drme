@@ -9,6 +9,8 @@ uniform vec2 uResolution;
 uniform float uTime;
 uniform int uRaymarchingSteps;
 uniform vec3 uRaymarchingParams;
+uniform vec2 uOcclusionParams;
+uniform vec3 uAmbientColor;
 
 #define MAX_OBJECTS 32
 
@@ -297,11 +299,11 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     lighting += (diffuse*col + specular)*l.color*shadow;
   }
 
-  float oct = 0.5f;
+  float oct = uOcclusionParams.y;
   float occl = sceneSdfSurf(pos- nrm*oct).dist - oct;
   occl = 1.0-min(occl*occl, 1.0);
 
-  vec3 ambient = vec3(0.8)*occl;
+  vec3 ambient = uAmbientColor*mix(1.0, occl, uOcclusionParams.x);
   lighting += col*ambient;
 
   col = lighting;
