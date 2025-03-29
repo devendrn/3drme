@@ -269,8 +269,10 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     vec3 lightDir = normalize(pos - l.position);
     vec3 reflectDir = reflect(-lightDir, nrm);
 
-    vec3 diffuse =  max(dot(lightDir, nrm), 0.0)*l.color;
-    vec3 specular = 10.0*pow(max(dot(rd, reflectDir), 0.0), 32.0)*l.color;
+    float diffuse =  max(dot(lightDir, nrm), 0.0);
+    float r = 0.1;
+    float r0 = 1.0-r;
+    float specular = 2.0*pow(max(dot(rd, reflectDir), 0.0), 1.0/(r*r))*(r0*r0);
 
     float dr = length(pos - l.position);
 
@@ -290,9 +292,14 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     float shadow = smoothstep(0.0, 0.05, md);
     shadow /= (1.0+dr*dr);
 
-    lighting += (diffuse*col + specular)*shadow;
+    lighting += (diffuse*col + specular)*l.color*shadow;
   }
-  vec3 ambient = vec3(0.1);
+
+  float oct = 0.5f;
+  float occl = sceneSdfSurf(pos- nrm*oct).dist - oct;
+  occl = 1.0-min(occl*occl, 1.0);
+
+  vec3 ambient = vec3(0.8)*occl;
   lighting += col*ambient;
 
   col = lighting;
