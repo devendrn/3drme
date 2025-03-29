@@ -229,7 +229,9 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("About")) {
-        ImGui::MenuItem("AktinoMarcher v0.1");
+        ImGui::Text("AktinoMarcher v%s", PROJECT_VERSION);
+        ImGui::Separator();
+        ImGui::Text(PROJECT_DESCRIPTION);
         ImGui::EndMenu();
       }
       ImGui::EndMenuBar();

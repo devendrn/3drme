@@ -1,11 +1,18 @@
 cmake_minimum_required(VERSION 3.17)
 
-project(3d-raymarched-engine LANGUAGES CXX)
+project(3d-raymarched-engine
+  VERSION 0.2.0
+  DESCRIPTION "3D Raymarched Editor built by:\\n- Deven\\n- Aswin\\n- Delvin"
+  LANGUAGES CXX
+)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(OpenGL_GL_PREFERENCE GLVND)
+
+add_definitions(-DPROJECT_VERSION="${PROJECT_VERSION}")
+add_definitions(-DPROJECT_DESCRIPTION="${PROJECT_DESCRIPTION}")
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
