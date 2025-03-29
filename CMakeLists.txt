@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 
-project(3d-raymarched-engine
-  VERSION 0.2.0
+project(3drme
+  VERSION 0.5.0
   DESCRIPTION "3D Raymarched Editor built by:\\n- Deven\\n- Aswin\\n- Delvin"
   LANGUAGES CXX
 )

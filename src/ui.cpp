@@ -123,7 +123,7 @@ void updateWindowTitle(GLFWwindow* window, std::string& filepath) {
       title = filepath.substr(lastSlash + 1);
     }
   }
-  title += " - Aktinomarcher";
+  title += " - 3DRME";
   glfwSetWindowTitle(window, title.c_str());
 };
 
@@ -232,7 +232,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("About")) {
-        ImGui::Text("AktinoMarcher v%s", PROJECT_VERSION);
+        ImGui::Text("3DRME v%s", PROJECT_VERSION);
         ImGui::Separator();
         ImGui::Text(PROJECT_DESCRIPTION);
         ImGui::EndMenu();
