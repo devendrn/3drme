@@ -62,6 +62,7 @@ struct Surface {
   float dist;
   vec3 color;
   float selected;
+  float roughness;
 };
 
 struct Light {
@@ -96,6 +97,7 @@ Surface uSurf(Surface a, Surface b, float k) {
   vec2 m = smin(a.dist, b.dist, k);
   a.dist = m.x;
   a.color = mix(a.color, b.color, m.y);
+  a.roughness = mix(a.roughness, b.roughness, m.y);
   return a;
 }
 
@@ -124,7 +126,7 @@ vec3 renderSky(vec3 pos, float t) {
 }
 
 Surface nodeEditorSdf(vec3 pos, float t) {
-  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0, 0.0);
   // !sdf_inline
   return s;
 }
@@ -142,13 +144,13 @@ float sceneSdf(vec3 p) {
 }
 
 Surface sceneSdfSurf(vec3 p)  {
-  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0, 0.0);
   for (int i = 0; i < objectsCount; i++) {
     ObjectUboData obj = objects[i];
     vec3 q = applyTransform(p, obj.transformation); // This is expensive
     float dist = sdfShape(q, obj.typeMatId.x);
     vec3 col = obj.typeMatId.x > 0 ? vec3(1.0, 0.0, 0.0) : vec3(1.0); // TODO: Implement materials
-    s = uSurf(s, Surface(dist, col, float(obj.typeMatId.z)));
+    s = uSurf(s, Surface(dist, col, float(obj.typeMatId.z), 0.0));
   }
   s = uSurf(s, nodeEditorSdf(p, uTime));
   return s;
@@ -204,7 +206,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
   float omega = 1.2;
   float dist = TMIN;
 
-  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0);
+  Surface s = Surface(FLOAT_MAX, vec3(0.0), 0.0, 0.0);
   vec3 pos = ro;
   for (int i=0; i < MAX_ITERATIONS; i++) {
     pos = ro + rd * dist;
@@ -270,9 +272,9 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     vec3 reflectDir = reflect(-lightDir, nrm);
 
     float diffuse =  max(dot(lightDir, nrm), 0.0);
-    float r = 0.1;
-    float r0 = 1.0-r;
-    float specular = 2.0*pow(max(dot(rd, reflectDir), 0.0), 1.0/(r*r))*(r0*r0);
+    float r0 = s.roughness;
+    float r1 = 1.0-r0;
+    float specular = 2.0*pow(max(dot(rd, reflectDir), 0.0), 1.0/(r0*r0))*(r1*r1);
 
     float dr = length(pos - l.position);
 
