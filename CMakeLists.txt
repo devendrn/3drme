@@ -23,6 +23,7 @@ add_subdirectory(lib/imgui)
 add_subdirectory(lib/imgui-node-editor)
 include_directories(lib/cereal/include)
 include_directories(lib/imbrowser/include)
+include_directories(lib/stb)
 
 add_compile_definitions(IMGUI_DEFINE_MATH_OPERATORS)
 

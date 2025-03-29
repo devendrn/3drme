@@ -75,6 +75,8 @@ public:
 
   static void inputScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+  void captureImage(std::string& file) const;
+
 private:
   float downscaleFactorPrivate;
 

@@ -6,6 +6,9 @@
 #include <map>
 #include <string>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "camera.hpp"
 #include "scene.hpp"
 #include "shader.hpp"
@@ -72,8 +75,8 @@ void Viewport::resize(int w, int h) {
   width = w;
   height = h;
 
-  renderWidth = static_cast<int>(static_cast<float>(width) * (1.0f-downscaleFactor));
-  renderHeight = static_cast<int>(static_cast<float>(height) * (1.0f-downscaleFactor));
+  renderWidth = static_cast<int>(static_cast<float>(width) * (1.0f - downscaleFactor));
+  renderHeight = static_cast<int>(static_cast<float>(height) * (1.0f - downscaleFactor));
 
   framebuffer.resize(renderWidth, renderHeight);
   taaFramebuffer.resize(width, height);
@@ -210,4 +213,19 @@ void Viewport::inputScrollCallback(GLFWwindow* window, double xoffset, double yo
     vp->camera.yaw += x;
     vp->camera.pitch += y;
   }
+}
+
+void Viewport::captureImage(std::string& filePath) const {
+  taaFramebuffer.bind(); 
+  GLsizei nrChannels = 3;
+  GLsizei stride = nrChannels * width;
+  stride += ((stride % 4) != 0) ? (4 - stride % 4) : 0;
+  GLsizei bufferSize = stride * height;
+  std::vector<char> buffer(bufferSize);
+  glPixelStorei(GL_PACK_ALIGNMENT, 4);
+  glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
+  taaFramebuffer.unbind();
+
+  stbi_flip_vertically_on_write(1);
+  stbi_write_png(filePath.c_str(), width, height, nrChannels, buffer.data(), stride);
 }

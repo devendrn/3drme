@@ -164,10 +164,13 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
 
   static auto loadFileDialog = ImGui::FileBrowser();
   static auto saveFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
+  static auto saveImageDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
   loadFileDialog.SetTitle("Load project file");
   loadFileDialog.SetTypeFilters({".prj"});
   saveFileDialog.SetTitle("Save project file");
   saveFileDialog.SetTypeFilters({".prj"});
+  saveImageDialog.SetTitle("Save image");
+  saveImageDialog.SetTypeFilters({".png"});
 
   static bool optFullscreenPersistant = true;
   static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
@@ -223,9 +226,9 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("Project")) {
-        // if (ImGui::MenuItem("Save image")) {
-        //   saveFileDialog.Open();
-        // }
+        if (ImGui::MenuItem("Save image")) {
+          saveImageDialog.Open();
+        }
         ImGui::EndMenu();
       }
       if (ImGui::BeginMenu("About")) {
@@ -238,6 +241,7 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
 
       loadFileDialog.Display();
       saveFileDialog.Display();
+      saveImageDialog.Display();
 
       if (loadFileDialog.HasSelected()) {
         std::string path = loadFileDialog.GetSelected();
@@ -251,6 +255,11 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         pd.saveProjectFile(scene, viewport, nodeEditor, saveFileDialog.GetSelected());
         updateWindowTitle(window, path);
         saveFileDialog.ClearSelected();
+      }
+      if (saveImageDialog.HasSelected()) {
+        std::string path = saveImageDialog.GetSelected();
+        viewport.captureImage(path);
+        saveImageDialog.ClearSelected();
       }
     }
 
