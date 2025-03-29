@@ -102,6 +102,7 @@ void Viewport::render() {
   shader.setUniformVec2("uOcclusionParams", glm::vec2(occlusionFactor, occlusionRadius));
   shader.setUniformVec3("uAmbientColor", ambientColor);
   shader.setUniformVec3("uProj", camera.getProjVec());
+  shader.setUniformVec3("uCamTarget", camera.target);
   shader.setUniformVec3("uRaymarchingParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
   shader.setUniformMat3("uViewRot", camera.getViewRotMat());
 
@@ -211,14 +212,15 @@ void Viewport::inputScrollCallback(GLFWwindow* window, double xoffset, double yo
 
   if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
     vp->camera.dist = glm::max(vp->camera.dist + x - y, 0.1f);
+  } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+    vp->camera.displaceTarget(glm::vec2(x, y));
   } else {
-    vp->camera.yaw += x;
-    vp->camera.pitch += y;
+    vp->camera.offsetYawPitch(x, y);
   }
 }
 
 void Viewport::captureImage(std::string& filePath) const {
-  taaFramebuffer.bind(); 
+  taaFramebuffer.bind();
   GLsizei nrChannels = 3;
   GLsizei stride = nrChannels * width;
   stride += ((stride % 4) != 0) ? (4 - stride % 4) : 0;

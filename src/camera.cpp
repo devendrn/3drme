@@ -1,5 +1,6 @@
 #include "camera.hpp"
 
+#include <glm/common.hpp>
 #include <glm/gtc/constants.hpp>
 
 Camera::Camera(float fov, float scale) : dist(3.0), yaw(0.78), pitch(0.39), fov(fov), scale(scale), isOrtho(false) {}
@@ -25,3 +26,22 @@ void Camera::setViewpoint(int yawi, int pitchi) {
 }
 
 void Camera::toggleOrthoView() { isOrtho = !isOrtho; }
+
+void Camera::displaceTarget(glm::vec2 delta) {
+  float sy = glm::sin(yaw);
+  float cy = glm::cos(yaw);
+  glm::vec3 hoffset = glm::vec3(cy, 0.0, sy);
+  glm::vec3 voffset;
+  voffset.y = glm::cos(pitch);
+  voffset.z = glm::sin(pitch);
+  voffset.x = -sy * voffset.z;
+  voffset.z = cy * voffset.z;
+
+  target += hoffset * delta.x;
+  target -= voffset * delta.y;
+}
+
+void Camera::offsetYawPitch(float yawDelta, float pitchDelta) {
+  yaw = glm::mod(yaw + yawDelta, glm::two_pi<float>());
+  pitch = glm::mod(pitch + pitchDelta, glm::two_pi<float>());
+}

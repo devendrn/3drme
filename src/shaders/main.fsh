@@ -4,6 +4,7 @@ out vec4 fragColor;
 
 uniform mat3 uViewRot;
 uniform vec3 uProj;
+uniform vec3 uCamTarget;
 uniform vec2 uJitterOffset;
 uniform vec2 uResolution;
 uniform float uTime;
@@ -328,8 +329,8 @@ vec3 render(vec2 uv) {
 
   uv *= scale;
 
-  vec3 ray_backplane = vec3(uv, -dist) * uViewRot;
-  vec3 ray_frontplane = vec3(fovVal*uv, -dist+0.5) * uViewRot;
+  vec3 ray_backplane = (vec3(uv, -dist) * uViewRot) - uCamTarget;
+  vec3 ray_frontplane = (vec3(fovVal*uv, -dist+0.5) * uViewRot) - uCamTarget;
 
   vec3 ray_org = ray_backplane;
   vec3 ray_dir = normalize(ray_frontplane-ray_backplane);
