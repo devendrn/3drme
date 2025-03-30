@@ -140,6 +140,16 @@ std::vector<float> Node::getData() const { return data; }
 
 void Node::setData(const std::vector<float>& data) { this->data = data; }
 
+unsigned long appendDataPtrs(const Node* node) {
+  unsigned long index = dataPointers.size();
+  for (const auto& x : node->data)
+    dataPointers.push_back(&x);
+  return index;
+}
+
+std::string uNFloat(unsigned long index) { return std::format("uN[{}]", index); }
+std::string uNVec3(unsigned long index) { return std::format("vec3(uN[{}],uN[{}],uN[{}])", index, index + 1, index + 2); }
+
 void Node::drawBaseOutput(int index) {
   auto& pin = outputs[index];
   float textWidth = ImGui::CalcTextSize(pin.name.c_str()).x;
@@ -215,6 +225,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
         const Pin& i1 = node->inputs[1];
         if (i1.pins.empty())
           return "";
+        return std::format("s={};", i1.pins[0]->generateGlsl());
       }
       // lights variant
       const Pin& i2 = node->inputs[2];
@@ -254,14 +265,15 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
         ImGui::DragFloat3("##pos", &node->data[posLoc]);
         ImGui::Dummy(ImVec2(0, 4));
       });
-      node->drawBaseInput(2, [&] { ImGui::DragFloat("##radius", &node->data[radiusLoc]); });
-      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { ImGui::DragFloat("##radius", &node->data[radiusLoc], 0.05, 0.0); });
+      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc], 0.01, 0.0, 1.0); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
-      std::string colCode = node->pin0GenerateGlsl(0, toVec3String(&node->data[colLoc]));
-      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + toVec3String(&node->data[posLoc]));
-      std::string radiusCode = node->pin0GenerateGlsl(2, std::format("{:.3f}", node->data[radiusLoc]));
-      std::string roughnessCode = node->pin0GenerateGlsl(3, std::format("{:.3f}", node->data[roughnessLoc]));
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + uNVec3(index + posLoc));
+      std::string radiusCode = node->pin0GenerateGlsl(2, uNFloat(index + radiusLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(3, uNFloat(index + roughnessLoc));
       return std::format("Surface(sdfSphere({},{}),{},0.0,{})", posCode, radiusCode, colCode, roughnessCode);
     });
     defs.insert({nd.type, nd});
@@ -293,22 +305,23 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
         ImGui::Dummy(ImVec2(0, 4));
       });
       node->drawBaseInput(1, [&] {
-        ImGui::DragFloat3("##pos", &node->data[posLoc]);
+        ImGui::DragFloat3("##pos", &node->data[posLoc], 0.05);
         ImGui::Dummy(ImVec2(0, 4));
       });
       node->drawBaseInput(2, [&] {
-        ImGui::DragFloat3("##bou", &node->data[sizeLoc]);
+        ImGui::DragFloat3("##bou", &node->data[sizeLoc], 0.05);
         ImGui::Dummy(ImVec2(0, 4));
       });
-      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rou", &node->data[roundingLoc]); });
-      node->drawBaseInput(4, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rou", &node->data[roundingLoc], 0.01, 0.0); });
+      node->drawBaseInput(4, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc], 0.01, 0.0, 1.0); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
-      std::string colCode = node->pin0GenerateGlsl(0, toVec3String(&node->data[colLoc]));
-      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + toVec3String(&node->data[posLoc]));
-      std::string boundCode = node->pin0GenerateGlsl(2, toVec3String(&node->data[sizeLoc]));
-      std::string roundingCode = node->pin0GenerateGlsl(3, std::format("{:.3f}", node->data[roundingLoc]));
-      std::string roughnessCode = node->pin0GenerateGlsl(4, std::format("{:.3f}", node->data[roughnessLoc]));
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + uNVec3(index + posLoc));
+      std::string boundCode = node->pin0GenerateGlsl(2, uNVec3(index + sizeLoc));
+      std::string roundingCode = node->pin0GenerateGlsl(3, uNFloat(index + roundingLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(4, uNFloat(index + roughnessLoc));
       return std::format("Surface(sdfBox({},{},{}),{},0.0,{})", posCode, boundCode, roundingCode, colCode, roughnessCode);
     });
     defs.insert({nd.type, nd});
@@ -340,6 +353,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseInput(1);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
       const Pin& i0 = node->inputs[0];
       const Pin& i1 = node->inputs[1];
       if (i0.pins.empty())
@@ -354,7 +368,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       if (typef == 0.0f) {
         func = "uSurf";
         if (smooth > 0.0)
-          end = "," + std::to_string(smooth) + ")";
+          end = "," + uNFloat(index + smoothLoc) + ")";
       } else if (typef == 1.0f)
         func = "dSurf";
       else if (typef == 2.0f)
@@ -374,7 +388,10 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseOutput(0);
       ImGui::DragFloat("##x", node->data.data());
     });
-    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return std::format("{}", node->data[0]); });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      return uNFloat(index);
+    });
     defs.insert({nd.type, nd});
   }
   {
@@ -398,7 +415,10 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseOutput(0);
       ImGui::DragFloat3("##x", node->data.data());
     });
-    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return std::format("{}", toVec3String(node->data.data())); });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      return uNVec3(index);
+    });
     defs.insert({nd.type, nd});
   }
   {
@@ -442,8 +462,9 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
       std::string posCode = node->pin0GenerateGlsl(0, "0.0");
-      return std::format("({}+{})", posCode, toVec3String(node->data.data()));
+      return std::format("({}+{})", posCode, uNVec3(index));
     });
     defs.insert({nd.type, nd});
   }
@@ -458,8 +479,9 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
       std::string posCode = node->pin0GenerateGlsl(0, "0.0");
-      return std::format("({}*{})", posCode, toVec3String(node->data.data()));
+      return std::format("({}*{})", posCode, uNVec3(index));
     });
     defs.insert({nd.type, nd});
   }
@@ -474,8 +496,9 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
       std::string posCode = node->pin0GenerateGlsl(0, "0.0");
-      return std::format("({}*rmat({}))", posCode, toVec3String(node->data.data()));
+      return std::format("({}*rmat({}))", posCode, uNVec3(index));
     });
     defs.insert({nd.type, nd});
   }
@@ -553,9 +576,10 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       ImGui::DragFloat3("##pos", &node->data[posLoc]);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
-      std::string colorCode = node->pin0GenerateGlsl(0, toVec3String(&node->data[colLoc]));
-      std::string intensityCode = node->pin0GenerateGlsl(1, std::format("{}", node->data[intensityLoc]));
-      std::string posCode = node->pin0GenerateGlsl(2, toVec3String(&node->data[posLoc]));
+      unsigned long index = appendDataPtrs(node);
+      std::string colorCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string intensityCode = node->pin0GenerateGlsl(1, uNFloat(index + intensityLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, uNVec3(index + posLoc));
       return std::format("Light({},{}*{},{})", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]));
     });
     defs.insert({nd.type, nd});
@@ -621,3 +645,5 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
         },
     },
 };
+
+std::vector<const float*> dataPointers;

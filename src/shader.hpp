@@ -27,6 +27,7 @@ public:
   void setUniformInt(const std::string& name, int value) const;
 
   void setUniformFloat(const std::string& name, float value) const;
+  void setUniformFloat(const std::string& name, float* values, int size) const;
 
   void setUniformVec2(const std::string& name, const glm::vec2& value) const;
   void setUniformVec3(const std::string& name, const glm::vec3& value) const;
@@ -34,6 +35,7 @@ public:
 
   void setUniformMat3(const std::string& name, const glm::mat3& value) const;
   void setUniformMat4(const std::string& name, const glm::mat4& value) const;
+
 
   const std::string& getFragError() const;
 

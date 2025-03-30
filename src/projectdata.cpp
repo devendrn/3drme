@@ -20,7 +20,7 @@ template <class Archive> void serialize(Archive& archive, Object& d) { archive(d
 template <class Archive> void serialize(Archive& archive, Material& d) { archive(d.color); }
 template <class Archive> void serialize(Archive& archive, Scene& d) { archive(d.sceneTree, d.materials); }
 template <class Archive> void serialize(Archive& archive, Camera& d) { archive(d.dist, d.yaw, d.pitch, d.fov, d.scale, d.target, d.isOrtho); }
-template <class Archive> void serialize(Archive& archive, Viewport& d) { archive(d.camera); }
+template <class Archive> void serialize(Archive& archive, Viewport& d) { archive(d.camera, d.downscaleFactor, d.raymarchingSteps, d.raymarchingClipStart, d.raymarchingClipEnd, d.raymarchingPixelRadius, d.taaFeedbackFactor, d.occlusionFactor, d.occlusionRadius, d.ambientColor); }
 
 } // namespace cereal
 

@@ -152,6 +152,11 @@ void reloadNodeScene(NodeEditor& nodeEditor, Shader& shader) {
   std::cout << "[Node editor] Inline shader code: Surface\n" << surfaceCode << "\n";
   std::cout << "[Node editor] Inline shader code: Sky\n" << skyCode << "\n";
   std::cout << "[Node editor] Inline shader code: Lights\n" << lightsCode << "\n";
+  std::cout << "[Node editor] uN[] data: ";
+  for (const auto* val : dataPointers)
+    std::cout << *val << ", ";
+  std::cout << "\n\n";
+
   shader.reloadFragment();
 }
 

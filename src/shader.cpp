@@ -36,6 +36,7 @@ void Shader::reloadFragment() {
 
 void Shader::setUniformInt(const std::string& name, int value) const { glUniform1i(glGetUniformLocation(ID, name.c_str()), value); }
 void Shader::setUniformFloat(const std::string& name, float value) const { glUniform1f(glGetUniformLocation(ID, name.c_str()), value); }
+void Shader::setUniformFloat(const std::string& name, float* values, int size) const { glUniform1fv(glGetUniformLocation(ID, name.c_str()), size, values); }
 void Shader::setUniformVec2(const std::string& name, const glm::vec2& value) const { glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); }
 void Shader::setUniformVec3(const std::string& name, const glm::vec3& value) const { glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); }
 void Shader::setUniformVec4(const std::string& name, const glm::vec4& value) const { glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]); }

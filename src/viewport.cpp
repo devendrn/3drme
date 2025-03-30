@@ -10,6 +10,7 @@
 #include <stb_image_write.h>
 
 #include "camera.hpp"
+#include "nodes.hpp"
 #include "scene.hpp"
 #include "shader.hpp"
 
@@ -105,6 +106,13 @@ void Viewport::render() {
   shader.setUniformVec3("uCamTarget", camera.target);
   shader.setUniformVec3("uRaymarchingParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
   shader.setUniformMat3("uViewRot", camera.getViewRotMat());
+
+  std::vector<float> nodeDataArray;
+  nodeDataArray.reserve(100);
+  for (const float* d : dataPointers)
+    nodeDataArray.emplace_back(*d);
+
+  shader.setUniformFloat("uN", nodeDataArray.data(), static_cast<int>(nodeDataArray.size()));
 
   taaShader.setUniformInt("uObjectData", 0);
 

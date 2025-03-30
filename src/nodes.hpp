@@ -133,4 +133,6 @@ extern const std::map<NodeType, NodeDefinition> nodeDefinitions;
 
 extern const std::map<std::string, std::map<std::string, NodeType>> nodeListTree;
 
+extern std::vector<const float*> dataPointers;
+
 #endif

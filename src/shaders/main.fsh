@@ -13,6 +13,8 @@ uniform vec3 uRaymarchingParams;
 uniform vec2 uOcclusionParams;
 uniform vec3 uAmbientColor;
 
+uniform float uN[1024];
+
 #define MAX_OBJECTS 32
 
 #define FLOAT_MAX 1e10

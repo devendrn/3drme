@@ -54,6 +54,9 @@ void NodeEditor::show() {
 }
 
 void NodeEditor::generateGlslCode(std::string& surface, std::string& sky, std::string& lights) const {
+  dataPointers.clear();
+  if (dataPointers.capacity() < 100)
+    dataPointers.reserve(100);
   surface = nodes[0]->generateGlsl(0);
   sky = nodes[0]->generateGlsl(1);
   lights = nodes[0]->generateGlsl(2);
