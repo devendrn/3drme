@@ -174,11 +174,11 @@ void Node::drawBaseInput(int index, std::function<void()> inner) {
   auto& pin = inputs[index];
   ed::BeginPin(pin.id, ed::PinKind::Input);
   {
-    float extraHeight = pin.kind == PinKind::InputMulti ? 2 : 0;
-    ImGui::Dummy(ImVec2(16, 16));
+    float roundness = pin.kind == PinKind::InputMulti ? 1 : 5;
+    ImGui::Dummy(ImVec2(14, 16));
     ed::PinPivotAlignment(ImVec2(0.0f, 0.5f));
     ImColor pinColor = getPinColor(pin.type);
-    ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetItemRectMin() + ImVec2(3, 3 - extraHeight), ImGui::GetItemRectMin() + ImVec2(13 - extraHeight, 13 + extraHeight), pinColor, 6);
+    ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetItemRectMin() + ImVec2(3, 3), ImGui::GetItemRectMin() + ImVec2(13, 13), pinColor, roundness);
     ImGui::SameLine();
     ImGui::Text("%s", pin.name.c_str());
   }
@@ -191,6 +191,8 @@ std::string toVec3String(float x, float y, float z) { return std::format("vec3({
 std::string toVec3String(const float* data) { return toVec3String(*(data), *(data + 1), *(data + 2)); }
 
 void drawColorEdit(float* data) { ImGui::ColorEdit3("##col", data, ImGuiColorEditFlags_NoPicker | ImGuiColorEditFlags_Float | ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoOptions); }
+void drawVec3Edit(const char* id, float* data, float speed = 0.04f, float min = 0.0, float max = 0.0) { ImGui::DragFloat3(id, data, speed, min, max); }
+void drawFloatEdit(const char* id, float* data, float speed = 0.01f, float min = 0.0, float max = 1.0) { ImGui::DragFloat(id, data, speed, min, max); }
 
 // use constexpr ?
 std::map<NodeType, NodeDefinition> initDefinitions() {
@@ -243,39 +245,33 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
   {
     NodeDefinition nd{NodeType::SurfaceCreateSphere, "Surface Sphere", surfaceColor};
     const int colLoc = 0;
-    const int posLoc = 3;
-    const int radiusLoc = 6;
-    const int roughnessLoc = 7;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int radiusLoc = 7;
     nd.initializeData({
         1, 1, 1, // col
+        1,       // roughness
         0, 0, 0, // pos
         1,       // radius
-        1        // roughness
     });
     nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
     nd.addInput("Postion", PinType::Vec3);
     nd.addInput("Radius", PinType::Float);
-    nd.addInput("Roughness", PinType::Float);
     nd.addOutput("", PinType::Surface);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      node->drawBaseInput(0, [&] {
-        drawColorEdit(&node->data[colLoc]);
-        ImGui::Dummy(ImVec2(0, 4));
-      });
-      node->drawBaseInput(1, [&] {
-        ImGui::DragFloat3("##pos", &node->data[posLoc]);
-        ImGui::Dummy(ImVec2(0, 4));
-      });
-      node->drawBaseInput(2, [&] { ImGui::DragFloat("##radius", &node->data[radiusLoc], 0.05, 0.0); });
-      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc], 0.01, 0.0, 1.0); });
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawFloatEdit("##radius", &node->data[radiusLoc], 0.03, 0, 1e3); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
       std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
-      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + uNVec3(index + posLoc));
-      std::string radiusCode = node->pin0GenerateGlsl(2, uNFloat(index + radiusLoc));
-      std::string roughnessCode = node->pin0GenerateGlsl(3, uNFloat(index + roughnessLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string radiusCode = node->pin0GenerateGlsl(3, uNFloat(index + radiusLoc));
       return std::format("Surface(sdfSphere({},{}),{},0.0,{})", posCode, radiusCode, colCode, roughnessCode);
     });
     defs.insert({nd.type, nd});
@@ -283,48 +279,205 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
   {
     NodeDefinition nd{NodeType::SurfaceCreateBox, "Surface Box", surfaceColor};
     const int colLoc = 0;
-    const int posLoc = 3;
-    const int sizeLoc = 6;
-    const int roundingLoc = 9;
-    const int roughnessLoc = 10;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int sizeLoc = 7;
+    const int roundingLoc = 10;
     nd.initializeData({
         1, 1, 1, // col
+        1,       // roughness
         0, 0, 0, // pos
         1, 1, 1, // size
         0,       // roundness
-        1        // roughness
     });
     nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
     nd.addInput("Postion", PinType::Vec3);
     nd.addInput("Size", PinType::Vec3);
     nd.addInput("Rounding", PinType::Float);
-    nd.addInput("Roughness", PinType::Float);
     nd.addOutput("", PinType::Surface);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      node->drawBaseInput(0, [&] {
-        drawColorEdit(&node->data[colLoc]);
-        ImGui::Dummy(ImVec2(0, 4));
-      });
-      node->drawBaseInput(1, [&] {
-        ImGui::DragFloat3("##pos", &node->data[posLoc], 0.05);
-        ImGui::Dummy(ImVec2(0, 4));
-      });
-      node->drawBaseInput(2, [&] {
-        ImGui::DragFloat3("##bou", &node->data[sizeLoc], 0.05);
-        ImGui::Dummy(ImVec2(0, 4));
-      });
-      node->drawBaseInput(3, [&] { ImGui::DragFloat("##rou", &node->data[roundingLoc], 0.01, 0.0); });
-      node->drawBaseInput(4, [&] { ImGui::DragFloat("##rough", &node->data[roughnessLoc], 0.01, 0.0, 1.0); });
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawVec3Edit("##bou", &node->data[sizeLoc]); });
+      node->drawBaseInput(4, [&] { drawFloatEdit("##round", &node->data[roundingLoc]); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
       std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
-      std::string posCode = node->pin0GenerateGlsl(1, "pos-" + uNVec3(index + posLoc));
-      std::string boundCode = node->pin0GenerateGlsl(2, uNVec3(index + sizeLoc));
-      std::string roundingCode = node->pin0GenerateGlsl(3, uNFloat(index + roundingLoc));
-      std::string roughnessCode = node->pin0GenerateGlsl(4, uNFloat(index + roughnessLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string boundCode = node->pin0GenerateGlsl(3, uNVec3(index + sizeLoc));
+      std::string roundingCode = node->pin0GenerateGlsl(4, uNFloat(index + roundingLoc));
       return std::format("Surface(sdfBox({},{},{}),{},0.0,{})", posCode, boundCode, roundingCode, colCode, roughnessCode);
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::SurfaceCreateCylinder, "Surface Cylinder", surfaceColor};
+    const int colLoc = 0;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int radiusLoc = 7;
+    const int heightLoc = 8;
+    const int roundingLoc = 9;
+    nd.initializeData({
+        1, 1, 1, // col
+        1,       // roughness
+        0, 0, 0, // pos
+        1,       // radius
+        1,       // height
+        0,       // rounding
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
+    nd.addInput("Postion", PinType::Vec3);
+    nd.addInput("Radius", PinType::Float);
+    nd.addInput("Height", PinType::Float);
+    nd.addInput("Rounding", PinType::Float);
+    nd.addOutput("", PinType::Surface);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawFloatEdit("##radius", &node->data[radiusLoc], 0.03, 0.0, 1e2); });
+      node->drawBaseInput(4, [&] { drawFloatEdit("##height", &node->data[heightLoc], 0.03, 0.0, 1e4); });
+      node->drawBaseInput(5, [&] { drawFloatEdit("##round", &node->data[roundingLoc], 0.03, 0.0, 1e2); });
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string radiusCode = node->pin0GenerateGlsl(3, uNFloat(index + radiusLoc));
+      std::string heightCode = node->pin0GenerateGlsl(4, uNFloat(index + heightLoc));
+      std::string roundingCode = node->pin0GenerateGlsl(5, uNFloat(index + roundingLoc));
+      return std::format("Surface(sdfCylinder({},{},{},{}),{},0.0,{})", posCode, radiusCode, heightCode, roundingCode, colCode, roughnessCode);
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::SurfaceCreateTorus, "Surface Torus", surfaceColor};
+    const int colLoc = 0;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int radiusLoc = 7;
+    const int thicknessLoc = 8;
+    nd.initializeData({
+        1, 1, 1, // col
+        1,       // roughness
+        0, 0, 0, // pos
+        0.8,     // ring radius
+        0.4,     // thickness
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
+    nd.addInput("Postion", PinType::Vec3);
+    nd.addInput("Ring radius", PinType::Float);
+    nd.addInput("Ring thickness", PinType::Float);
+    nd.addOutput("", PinType::Surface);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawFloatEdit("##radius", &node->data[radiusLoc], 0.03, 0.0, 1e2); });
+      node->drawBaseInput(4, [&] { drawFloatEdit("##thickness", &node->data[thicknessLoc], 0.03, 0.0, 1e2); });
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string radiusCode = node->pin0GenerateGlsl(3, uNFloat(index + radiusLoc));
+      std::string thicknessCode = node->pin0GenerateGlsl(4, uNFloat(index + thicknessLoc));
+      return std::format("Surface(sdfTorus({},{},{}),{},0.0,{})", posCode, radiusCode, thicknessCode, colCode, roughnessCode);
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::SurfaceCreateCone, "Surface Cone", surfaceColor};
+    const int colLoc = 0;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int heightLoc = 7;
+    const int topRadiusLoc = 8;
+    const int bottomRadiusLoc = 9;
+    const int roundingLoc = 10;
+    nd.initializeData({
+        1, 1, 1, // col
+        1,       // roughness
+        0, 0, 0, // pos
+        1,       // height
+        0,       // top radius
+        1,       // bottom radius
+        0,       // rounding
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
+    nd.addInput("Postion", PinType::Vec3);
+    nd.addInput("Height", PinType::Float);
+    nd.addInput("Top radius", PinType::Float);
+    nd.addInput("Bottom radius", PinType::Float);
+    nd.addInput("Rounding", PinType::Float);
+    nd.addOutput("", PinType::Surface);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawFloatEdit("##height", &node->data[heightLoc], 0.03, 0.0, 1e2); });
+      node->drawBaseInput(4, [&] { drawFloatEdit("##topradius", &node->data[topRadiusLoc], 0.03, 0.0, 1e2); });
+      node->drawBaseInput(5, [&] { drawFloatEdit("##bottomradius", &node->data[bottomRadiusLoc], 0.03, 0.0, 1e2); });
+      node->drawBaseInput(6, [&] { drawFloatEdit("##rounding", &node->data[roundingLoc], 0.03, 0.0, 1e2); });
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string heightCode = node->pin0GenerateGlsl(3, uNFloat(index + heightLoc));
+      std::string topRadiusCode = node->pin0GenerateGlsl(4, uNFloat(index + topRadiusLoc));
+      std::string bottomRadiusCode = node->pin0GenerateGlsl(5, uNFloat(index + bottomRadiusLoc));
+      std::string roundingCode = node->pin0GenerateGlsl(6, uNFloat(index + roundingLoc));
+      return std::format("Surface(sdfCappedCone({},{},{},{},{}),{},0.0,{})", posCode, heightCode, topRadiusCode, bottomRadiusCode, roundingCode, colCode, roughnessCode);
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::SurfaceCreatePlane, "Surface Plane", surfaceColor};
+    const int colLoc = 0;
+    const int roughnessLoc = 3;
+    const int posLoc = 4;
+    const int normalLoc = 7;
+    nd.initializeData({
+        1, 1, 1, // col
+        1,       // roughness
+        0, 0, 0, // pos
+        0, 1, 0, // normal
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Roughness", PinType::Float);
+    nd.addInput("Postion", PinType::Vec3);
+    nd.addInput("Normal", PinType::Vec3);
+    nd.addOutput("", PinType::Surface);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##rough", &node->data[roughnessLoc]); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(3, [&] { drawVec3Edit("##nrm", &node->data[normalLoc], 0.01, -1, 1); });
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string colCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string roughnessCode = node->pin0GenerateGlsl(1, uNFloat(index + roughnessLoc));
+      std::string posCode = node->pin0GenerateGlsl(2, "pos-" + uNVec3(index + posLoc));
+      std::string normalCode = node->pin0GenerateGlsl(3, uNVec3(index + normalLoc));
+      return std::format("Surface(sdfPlane({},{}),{},0.0,{})", posCode, normalCode, colCode, roughnessCode);
     });
     defs.insert({nd.type, nd});
   }
@@ -350,7 +503,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       ImGui::SameLine();
       if (ImGui::Selectable("I", typef == 2.0f, 0, size))
         typef = 2.0f;
-      ImGui::DragFloat("##smooth", &node->data[smoothLoc], 0.01f, 0.0, 1.0f);
+      drawFloatEdit("##smooth", &node->data[smoothLoc], 0.01f, 0, 1e2);
       node->drawBaseInput(0);
       node->drawBaseInput(1);
     });
@@ -383,12 +536,33 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
+    const int mixLoc = 0;
+    NodeDefinition nd{NodeType::SurfaceMix, "Surface Mix", surfaceColor, 100};
+    nd.initializeData({0});
+    nd.addInput("Input A", PinType::Surface);
+    nd.addInput("Input B", PinType::Surface);
+    nd.addOutput("Output", PinType::Surface);
+    nd.setDrawContent([&](Node* node) {
+      node->drawBaseOutput(0);
+      drawFloatEdit("##smooth", &node->data[mixLoc]);
+      node->drawBaseInput(0);
+      node->drawBaseInput(1);
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string surfACode = node->pin0GenerateGlsl(0, "Surface(FLOAT_MAX,vec3(0),0.0,0.0)");
+      std::string surfBCode = node->pin0GenerateGlsl(1, "Surface(FLOAT_MAX,vec3(0),0.0,0.0)");
+      return std::format("mSurf({},{},{})", surfACode, surfBCode, uNFloat(index + mixLoc));
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
     NodeDefinition nd{NodeType::Float, "Float", floatColor, 70};
     nd.initializeData({0});
     nd.addOutput("Output", PinType::Float);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat("##x", node->data.data());
+      drawFloatEdit("##x", node->data.data());
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
@@ -413,7 +587,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.addOutput("Output", PinType::Float);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat("##x", node->data.data());
+      drawFloatEdit("##x", node->data.data());
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return std::format("sin({}*{})", node->data[0], node->pin0GenerateGlsl(0, "0.0")); });
@@ -425,7 +599,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat3("##x", node->data.data());
+      drawVec3Edit("##x", node->data.data());
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
@@ -480,7 +654,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat3("##x", node->data.data());
+      drawVec3Edit("##x", node->data.data());
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
@@ -497,7 +671,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat3("##x", node->data.data());
+      drawVec3Edit("##x", node->data.data());
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
@@ -514,7 +688,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
-      ImGui::DragFloat3("##x", node->data.data());
+      drawVec3Edit("##x", node->data.data());
       node->drawBaseInput(0);
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
@@ -590,12 +764,9 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       ImGui::Text("Steps");
       ImGui::DragInt("##steps", &stepsInt, 1, 0, 128);
       node->data[stepsLoc] = static_cast<float>(stepsInt);
-      node->drawBaseInput(0);
-      drawColorEdit(&node->data[colLoc]);
-      node->drawBaseInput(1);
-      ImGui::DragFloat("##intensity", &node->data[intensityLoc]);
-      node->drawBaseInput(2);
-      ImGui::DragFloat3("##pos", &node->data[posLoc]);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##intensity", &node->data[intensityLoc], 0.05, 0, 1e4); });
+      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
@@ -629,9 +800,14 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
     {
         "Surface",
         {
+            {"Boolean", NodeType::SurfaceBoolean},
+            {"Mix", NodeType::SurfaceMix},
             {"Box", NodeType::SurfaceCreateBox},
             {"Sphere", NodeType::SurfaceCreateSphere},
-            {"Boolean", NodeType::SurfaceBoolean},
+            {"Plane", NodeType::SurfaceCreatePlane},
+            {"Cylinder", NodeType::SurfaceCreateCylinder},
+            {"Torus", NodeType::SurfaceCreateTorus},
+            {"Cone", NodeType::SurfaceCreateCone},
         },
     },
     {

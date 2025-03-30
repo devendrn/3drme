@@ -34,6 +34,9 @@ layout(std140, binding = 0) uniform uObjectBlock {
 // SDF functions: https://iquilezles.org/articles/distfunctions/
 // Smooth min: https://iquilezles.org/articles/smin/
 
+float dot2(vec2 x) { return dot(x, x); }
+float dot2(vec3 x) { return dot(x, x); }
+
 // legacy
 float sdfSphere(vec3 p) {
   return length(p)-1.0;
@@ -50,6 +53,30 @@ float sdfSphere(vec3 p, float r) {
 float sdfBox(vec3 p, vec3 b, float r) {
   vec3 q = abs(p) - b + r;
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0) - r;
+}
+float sdfCylinder(vec3 p, float ra, float h, float rb) {
+  vec2 d = vec2( length(p.xz)-2.0*ra+rb, abs(p.y)-h+rb);
+  return min(max(d.x,d.y),0.0) + length(max(d,0.0)) - rb;
+}
+float sdfTorus(vec3 p, float r, float t) {
+  vec2 q = vec2(length(p.xz)-r,p.y);
+  return length(q)-t;
+}
+float sdfPlane(vec3 p, vec3 n) {
+  return dot(p,n);
+}
+float sdfCappedCone(vec3 p, float h, float r1, float r2, float r) {
+  h -= r;
+  p.y += 0.5*r;
+  r1 = max(r1-r, 0.0);
+  r2 = max(r2-r, 0.0);
+  vec2 q = vec2(length(p.xz), -p.y);
+  vec2 k1 = vec2(r2,h);
+  vec2 k2 = vec2(r2-r1,2.0*h);
+  vec2 ca = vec2(q.x-min(q.x,(q.y<0.0)?r1:r2), abs(q.y)-h);
+  vec2 cb = q - k1 + k2*clamp(dot(k1-q,k2)/dot2(k2), 0.0, 1.0);
+  float s = (cb.x<0.0 && ca.y<0.0) ? -1.0 : 1.0;
+  return s*sqrt(min(dot2(ca),dot2(cb))) - 0.5*r;
 }
 
 float sdfShape(vec3 p, int type) {
@@ -115,6 +142,10 @@ Surface mixSurfParams(Surface a, Surface b, vec2 m) {
   a.color = mix(a.color, b.color, m.y);
   a.roughness = mix(a.roughness, b.roughness, m.y);
   return a;
+}
+
+Surface mSurf(Surface a, Surface b, float k) {
+  return mixSurfParams(a, b, vec2(mix(a.dist, b.dist, k), k));
 }
 
 Surface uSurf(Surface a, Surface b) {
