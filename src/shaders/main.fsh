@@ -94,25 +94,55 @@ vec2 smin(float a, float b, float k) {
   return (a < b) ? vec2(a-s,m) : vec2(b-s,1.0-m);
 }
 
-Surface uSurf(Surface a, Surface b) {
-  return (a.dist < b.dist) ? a : b;
+vec2 smax(float a, float b, float k) {
+  float h = 1.0-min(abs(a-b)/(4.0*k), 1.0);
+  float w = h*h;
+  float m = w*0.5;
+  float s = w*k;
+  return (a > b) ? vec2(a+s,m) : vec2(b+s,1.0-m);
 }
 
-Surface uSurf(Surface a, Surface b, float k) {
-  vec2 m = smin(a.dist, b.dist, k);
+vec2 sdiff(float a, float b, float k) {
+  float h = 1.0-min(abs(a+b)/(4.0*k), 1.0);
+  float w = h*h;
+  float m = w*0.5;
+  float s = w*k;
+  return (a > -b) ? vec2(a+s,m) : vec2(-b+s,1.0-m);
+}
+
+Surface mixSurfParams(Surface a, Surface b, vec2 m) {
   a.dist = m.x;
   a.color = mix(a.color, b.color, m.y);
   a.roughness = mix(a.roughness, b.roughness, m.y);
   return a;
 }
 
+Surface uSurf(Surface a, Surface b) {
+  return (a.dist < b.dist) ? a : b;
+}
+
+Surface uSurf(Surface a, Surface b, float k) {
+  vec2 m = smin(a.dist, b.dist, k);
+  return mixSurfParams(a, b, m);
+}
+
 Surface iSurf(Surface a, Surface b) {
   return (a.dist > b.dist) ? a : b;
+}
+
+Surface iSurf(Surface a, Surface b, float k) {
+  vec2 m = smax(a.dist, b.dist, k);
+  return mixSurfParams(a, b, m);
 }
 
 Surface dSurf(Surface a, Surface b) {
   b.dist = -b.dist;
   return (a.dist > b.dist) ? a : b;
+}
+
+Surface dSurf(Surface a, Surface b, float k) {
+  vec2 m = sdiff(a.dist, b.dist, k);
+  return mixSurfParams(a, b, m);
 }
 
 // TODO: Find a better place to do transformations
@@ -242,6 +272,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     dist += stepLength;
   }
 
+  float t = uTime;
   Light lights[] = Light[](
     Light(vec3(0.0),vec3(0.0),0) // unused
     // !lights_inline

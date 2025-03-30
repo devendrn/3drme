@@ -234,7 +234,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       if (i2.pins.empty())
         return "";
       std::string code;
-      for (int i = 0; i < i2.pins.size(); i++) 
+      for (int i = 0; i < i2.pins.size(); i++)
         code += "," + i2.pins[i]->generateGlsl();
       return code;
     });
@@ -369,12 +369,12 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       std::string end = ")";
       if (typef == 0.0f) {
         func = "uSurf";
-        if (smooth > 0.0)
-          end = "," + uNFloat(index + smoothLoc) + ")";
       } else if (typef == 1.0f)
         func = "dSurf";
       else if (typef == 2.0f)
         func = "iSurf";
+      if (smooth > 0.0)
+        end = "," + uNFloat(index + smoothLoc) + ")";
       auto l = i1.pins.size();
       for (int i = 0; i < l; i++)
         result = std::format("{}({},{}{}", func, result, i1.pins[i]->generateGlsl(), end);
@@ -397,7 +397,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
-    NodeDefinition nd{NodeType::Vec3Code, "Float Code", floatColor, 300};
+    NodeDefinition nd{NodeType::FloatCode, "Float Code", floatColor, 300};
     nd.addOutput("Output", PinType::Float);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
