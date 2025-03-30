@@ -5,7 +5,9 @@
 
 #include <imgui.h>
 #include <imgui_node_editor.h>
+#include <misc/cpp/imgui_stdlib.h>
 
+#include "imgui_internal.h"
 #include "nodes.hpp"
 
 ImColor getPinColor(PinType type) {
@@ -232,7 +234,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       if (i2.pins.empty())
         return "";
       std::string code;
-      for (int i = 0; i < i2.pins.size(); i++)
+      for (int i = 0; i < i2.pins.size(); i++) 
         code += "," + i2.pins[i]->generateGlsl();
       return code;
     });
@@ -357,7 +359,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       const Pin& i0 = node->inputs[0];
       const Pin& i1 = node->inputs[1];
       if (i0.pins.empty())
-        return "Surface(FLOAT_MAX,vec3(0),0.0)";
+        return "Surface(FLOAT_MAX,vec3(0),0.0,0.0)";
       std::string result = i0.pins[0]->generateGlsl();
       if (i1.pins.empty())
         return result;
@@ -395,6 +397,16 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     defs.insert({nd.type, nd});
   }
   {
+    NodeDefinition nd{NodeType::Vec3Code, "Float Code", floatColor, 300};
+    nd.addOutput("Output", PinType::Float);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      ImGui::InputText("##code", &node->code);
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return node->code; });
+    defs.insert({nd.type, nd});
+  }
+  {
     NodeDefinition nd{NodeType::FloatSine, "Float Sine", floatColor, 70};
     nd.initializeData({1});
     nd.addInput("Input", PinType::Float);
@@ -409,7 +421,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
   }
   {
     NodeDefinition nd{NodeType::Vec3, "Vec3", vec3Color};
-    nd.initializeData({0});
+    nd.initializeData({0, 0, 0});
     nd.addOutput("Output", PinType::Vec3);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
@@ -419,6 +431,16 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       unsigned long index = appendDataPtrs(node);
       return uNVec3(index);
     });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::Vec3Code, "Vec3 Code", vec3Color, 300};
+    nd.addOutput("Output", PinType::Vec3);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      ImGui::InputText("##code", &node->code);
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string { return node->code; });
     defs.insert({nd.type, nd});
   }
   {
@@ -616,6 +638,7 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
         "Float",
         {
             {"Value", NodeType::Float},
+            {"Code", NodeType::FloatCode},
             {"Sine", NodeType::FloatSine},
         },
     },
@@ -623,6 +646,7 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
         "Vec3",
         {
             {"Value", NodeType::Vec3},
+            {"Code", NodeType::Vec3Code},
             {"Math", NodeType::Vec3Math},
             {"Translate", NodeType::Vec3Translate},
             {"Scale", NodeType::Vec3Scale},

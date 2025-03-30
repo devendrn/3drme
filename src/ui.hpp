@@ -13,7 +13,7 @@
 
 void setStyle();
 
-void setupUi(GLFWwindow* window);
+void setupUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, NodeEditor& nodeEditor);
 
 void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, NodeEditor& nodeEditor);
 

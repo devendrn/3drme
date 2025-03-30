@@ -132,6 +132,7 @@ void NodeEditor::manageCreation() {
 
             startPin->addLink(endPin);
             links.emplace_back(nextId++, startPin->id, endPin->id);
+            structureOnChangeCallback();
           }
         }
       }
@@ -198,6 +199,8 @@ void NodeEditor::manageDeletion() {
       }
     }
     ed::EndDelete();
+
+    structureOnChangeCallback();
   }
 }
 
@@ -217,7 +220,7 @@ void NodeEditor::addNode(NodeType type) {
 void NodeEditor::saveGraph(SerializableGraph& graph) {
   for (auto& node : nodes) {
     auto [x, y] = ed::GetNodePosition(node->getId());
-    SerializableNode sNode{node->getIdLong(), node->getType(), x, y, node->getData()};
+    SerializableNode sNode{node->getIdLong(), node->getType(), x, y, node->getData(), node->code};
     graph.nodes.push_back(std::move(sNode));
   }
   for (auto& link : links) {
@@ -239,6 +242,7 @@ void NodeEditor::loadGraph(SerializableGraph& graph) {
       continue;
     }
     newNode->setData(serializableNode.data);
+    newNode->code = serializableNode.code;
     ed::SetNodePosition(newNode->getId(), ImVec2(serializableNode.px, serializableNode.py));
 
     nodes.push_back(std::move(newNode));

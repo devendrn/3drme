@@ -42,11 +42,6 @@ void initializeImGui(GLFWwindow* window) {
   ImGui::CreateContext();
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad | ImGuiConfigFlags_DockingEnable;
-
-  setupUi(window);
-
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init("#version 430");
 }
 
 int main() {
@@ -60,6 +55,11 @@ int main() {
   NodeEditor nodeEditor;
 
   initializeImGui(window);
+
+  setupUi(window, pd, viewport, scene, nodeEditor);
+
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init("#version 430");
 
   while (glfwWindowShouldClose(window) == 0) {
     buildUi(window, pd, viewport, scene, nodeEditor);

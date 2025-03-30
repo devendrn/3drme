@@ -127,12 +127,6 @@ void updateWindowTitle(GLFWwindow* window, std::string& filepath) {
   glfwSetWindowTitle(window, title.c_str());
 };
 
-void setupUi(GLFWwindow* window) {
-  setStyle();
-  std::string a;
-  updateWindowTitle(window, a);
-}
-
 void reloadNodeScene(NodeEditor& nodeEditor, Shader& shader) {
   std::string surfaceCode;
   std::string skyCode;
@@ -158,6 +152,14 @@ void reloadNodeScene(NodeEditor& nodeEditor, Shader& shader) {
   std::cout << "\n\n";
 
   shader.reloadFragment();
+}
+
+void setupUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, NodeEditor& nodeEditor) {
+  setStyle();
+  std::string a;
+  updateWindowTitle(window, a);
+
+  nodeEditor.setStructureOnChangeCallback([&] { reloadNodeScene(nodeEditor, viewport.shader); });
 }
 
 void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& scene, NodeEditor& nodeEditor) {

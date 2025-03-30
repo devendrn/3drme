@@ -18,8 +18,10 @@ enum class NodeType { //
   SurfaceCreateSphere,
   SurfaceBoolean,
   Float,
+  FloatCode,
   FloatSine,
   Vec3,
+  Vec3Code,
   Vec3Math,
   Vec3Translate,
   Vec3Scale,
@@ -90,6 +92,7 @@ public:
   std::vector<Pin> inputs;
   std::vector<Pin> outputs;
   std::vector<float> data;
+  std::string code; // only used by custom code nodes
 
   Node(unsigned long id, const NodeDefinition& definition);
   ~Node();

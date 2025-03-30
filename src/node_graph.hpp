@@ -19,7 +19,8 @@ struct SerializableNode {
   NodeType type;
   float px, py;
   std::vector<float> data;
-  template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py, data); }
+  std::string code;
+  template <class Archive> void serialize(Archive& archive) { archive(ID, type, px, py, data, code); }
 };
 
 struct SerializableLink {
@@ -50,6 +51,8 @@ public:
 
   const std::vector<std::unique_ptr<Node>>& getNodes() const;
 
+  void setStructureOnChangeCallback(const std::function<void()>& callback) { structureOnChangeCallback = callback; }
+
 private:
   std::vector<std::unique_ptr<Node>> nodes;
   std::vector<Link> links;
@@ -57,6 +60,8 @@ private:
   ed::EditorContext* editor = nullptr;
 
   unsigned long nextId = 1;
+
+  std::function<void()> structureOnChangeCallback = [] {};
 
   Node* findNode(ed::NodeId id) const;
   Pin* findPin(ed::PinId id) const;
