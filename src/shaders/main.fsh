@@ -101,6 +101,7 @@ struct Light {
   vec3 position;
   vec3 color;
   int shadowSteps;
+  float radius;
 };
 
 mat3 rmat(vec3 r) {
@@ -260,6 +261,23 @@ vec3 rayMarchSimple(vec3 ro, vec3 rd) {
   return col;
 }
 
+// https://iquilezles.org/articles/rmshadows/
+float softShadow(vec3 ro, vec3 rd, int steps, float mint, float maxt, float w) {
+  float res = 1.0;
+  float ph = 1e20;
+  float t = mint;
+  for (int i=0; i<steps && t<maxt; i++) {
+    float h = sceneSdfSurf(ro + rd*t).dist;
+    if (h<0.01) return 0.0;
+    float y = h*h/(2.0*ph);
+    float d = sqrt(h*h-y*y);
+    res = min( res, d/(w*max(0.0,t-y)) );
+    ph = h;
+    t += h;
+  }
+  return res;
+}
+
 vec3 rayMarch(vec3 ro, vec3 rd) {
   const int MAX_ITERATIONS = uRaymarchingSteps;
   const float TMIN = uRaymarchingParams.x;
@@ -305,7 +323,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
   float t = uTime;
   Light lights[] = Light[](
-    Light(vec3(0.0),vec3(0.0),0) // unused
+    Light(vec3(0),vec3(0),0,0.0) // unused
     // !lights_inline
   );
 
@@ -344,21 +362,7 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     float specular = 2.0*pow(max(dot(rd, reflectDir), 0.0), 1.0/(r0*r0))*(r1*r1);
 
     float dr = length(pos - l.position);
-
-    float dist = 0.2;
-    float md = 1000.0;
-    for (int i=0; i < l.shadowSteps; i++) {
-      vec3 p = pos - lightDir * dist;
-      Surface s = sceneSdfSurf(p);
-      md = min(md, s.dist);
-      if (s.dist < 0.001) {
-        break;
-      } else if (s.dist > 10.0) {
-        break;
-      }
-      dist += max(s.dist, 0.1);
-    }
-    float shadow = smoothstep(0.0, 0.05, md);
+    float shadow = softShadow(pos, -lightDir, l.shadowSteps, 0.2, 100.0, l.radius);
     shadow /= (1.0+dr*dr);
 
     lighting += (diffuse*col + specular)*l.color*shadow;

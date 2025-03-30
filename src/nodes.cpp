@@ -747,15 +747,18 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     const int colLoc = 0;
     const int posLoc = 3;
     const int intensityLoc = 6;
-    const int stepsLoc = 7;
+    const int radiusLoc = 7;
+    const int stepsLoc = 8;
     nd.initializeData({
         1, 1, 1, //
         0, 1, 0, //
         10,      //
+        0.1,     //
         16       //
     });
     nd.addInput("Color", PinType::Vec3);
     nd.addInput("Intensity", PinType::Float);
+    nd.addInput("Radius", PinType::Float);
     nd.addInput("Position", PinType::Vec3);
     nd.addOutput("", PinType::Light);
     nd.setDrawContent([](Node* node) {
@@ -766,14 +769,16 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       node->data[stepsLoc] = static_cast<float>(stepsInt);
       node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
       node->drawBaseInput(1, [&] { drawFloatEdit("##intensity", &node->data[intensityLoc], 0.05, 0, 1e4); });
-      node->drawBaseInput(2, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+      node->drawBaseInput(2, [&] { drawFloatEdit("##radius", &node->data[radiusLoc], 0.01, 0.0, 0.5); });
+      node->drawBaseInput(3, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
     });
     nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
       unsigned long index = appendDataPtrs(node);
       std::string colorCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
       std::string intensityCode = node->pin0GenerateGlsl(1, uNFloat(index + intensityLoc));
-      std::string posCode = node->pin0GenerateGlsl(2, uNVec3(index + posLoc));
-      return std::format("Light({},{}*{},{})", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]));
+      std::string radiusCode = node->pin0GenerateGlsl(2, uNFloat(index + radiusLoc));
+      std::string posCode = node->pin0GenerateGlsl(3, uNVec3(index + posLoc));
+      return std::format("Light({},{}*{},{},{})", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]), radiusCode);
     });
     defs.insert({nd.type, nd});
   }
