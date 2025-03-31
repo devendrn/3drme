@@ -40,8 +40,11 @@ void NodeEditor::show() {
     for (const auto& [category, list] : nodeListTree) {
       if (ImGui::BeginMenu(category.c_str())) {
         for (const auto& [name, node] : list) {
-          if (ImGui::MenuItem(name.c_str()))
+          if (ImGui::MenuItem(name.c_str())) {
+            ImVec2 lastPos = ed::GetNodePosition(nodes.back()->getId());
             addNode(node);
+            ed::SetNodePosition(nodes.back()->getId(), lastPos+ImVec2(30,30));
+          }
         }
         ImGui::EndMenu();
       }

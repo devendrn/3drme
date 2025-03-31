@@ -56,14 +56,17 @@ public:
   float taaFeedbackFactor = 0.92f;
   int frameCounter = 0;
 
-  int raymarchingSteps = 32;
+  int raymarchSteps = 32;
   float raymarchingClipStart = 0.5f;
   float raymarchingClipEnd = 20.0f;
   float raymarchingPixelRadius = 0.002f;
 
   glm::vec3 ambientColor = glm::vec3(1.0);
-  float occlusionFactor = 1.0;
-  float occlusionRadius = 0.2;
+  float ambientIntensity = 1.0f;
+  float occlusionFactor = 1.0f;
+  float occlusionRadius = 0.2f;
+  int reflRaymarchSteps = 16;
+  float fogFadeIn = 0.5f;
 
   static constexpr int maxFrames = 128;
   std::array<glm::vec2, maxFrames> haltonSequence;

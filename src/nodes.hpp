@@ -34,6 +34,7 @@ enum class NodeType { //
   Vec3Split,
   Vec3Combine,
   LightPoint,
+  LightDirectional,
   InputTime,
   InputPosition
 };

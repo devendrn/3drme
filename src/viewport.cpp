@@ -96,15 +96,17 @@ void Viewport::render() {
 
   shader.use();
 
-  shader.setUniformInt("uRaymarchingSteps", this->raymarchingSteps);
+  shader.setUniformInt("uRaymarchSteps", this->raymarchSteps);
+  shader.setUniformInt("uReflRaymarchSteps", this->reflRaymarchSteps);
   shader.setUniformFloat("uTime", static_cast<float>(glfwGetTime()));
+  shader.setUniformFloat("uFogFadeIn", fogFadeIn);
   shader.setUniformVec2("uResolution", glm::vec2(renderWidth, renderHeight));
   shader.setUniformVec2("uJitterOffset", jitterOffset);
   shader.setUniformVec2("uOcclusionParams", glm::vec2(occlusionFactor, occlusionRadius));
-  shader.setUniformVec3("uAmbientColor", ambientColor);
+  shader.setUniformVec3("uAmbientColor", ambientIntensity*ambientColor);
   shader.setUniformVec3("uProj", camera.getProjVec());
   shader.setUniformVec3("uCamTarget", camera.target);
-  shader.setUniformVec3("uRaymarchingParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
+  shader.setUniformVec3("uRaymarchParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
   shader.setUniformMat3("uViewRot", camera.getViewRotMat());
 
   std::vector<float> nodeDataArray;

@@ -749,17 +749,62 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
     const int intensityLoc = 6;
     const int radiusLoc = 7;
     const int stepsLoc = 8;
+    const int attenuationLoc = 9;
     nd.initializeData({
-        1, 1, 1, //
-        0, 1, 0, //
-        10,      //
-        0.1,     //
-        16       //
+        1, 1, 1, // color
+        2, 2, 2, // position
+        10,      // intensity
+        0.1,     // radius
+        16,      // steps
+        1,       // attenuation
     });
     nd.addInput("Color", PinType::Vec3);
     nd.addInput("Intensity", PinType::Float);
     nd.addInput("Radius", PinType::Float);
+    nd.addInput("Attenuation", PinType::Float);
     nd.addInput("Position", PinType::Vec3);
+    nd.addOutput("", PinType::Light);
+    nd.setDrawContent([](Node* node) {
+      node->drawBaseOutput(0);
+      int stepsInt = static_cast<int>(node->data[stepsLoc]);
+      ImGui::Text("Steps");
+      ImGui::DragInt("##steps", &stepsInt, 1, 0, 128);
+      node->data[stepsLoc] = static_cast<float>(stepsInt);
+      node->drawBaseInput(0, [&] { drawColorEdit(&node->data[colLoc]); });
+      node->drawBaseInput(1, [&] { drawFloatEdit("##intensity", &node->data[intensityLoc], 0.05, 0, 1e4); });
+      node->drawBaseInput(2, [&] { drawFloatEdit("##radius", &node->data[radiusLoc], 0.01, 0.0, 0.5); });
+      node->drawBaseInput(3, [&] { drawFloatEdit("##attenuation", &node->data[attenuationLoc], 0.02, 0.0, 1e2); });
+      node->drawBaseInput(4, [&] { drawVec3Edit("##pos", &node->data[posLoc]); });
+    });
+    nd.setGenerateGlsl([](const Node* node, unsigned long outputPinId) -> std::string {
+      unsigned long index = appendDataPtrs(node);
+      std::string colorCode = node->pin0GenerateGlsl(0, uNVec3(index + colLoc));
+      std::string intensityCode = node->pin0GenerateGlsl(1, uNFloat(index + intensityLoc));
+      std::string radiusCode = node->pin0GenerateGlsl(2, uNFloat(index + radiusLoc));
+      std::string attenuationCode = node->pin0GenerateGlsl(3, uNFloat(index + attenuationLoc));
+      std::string posCode = node->pin0GenerateGlsl(4, uNVec3(index + posLoc));
+      return std::format("Light({},{}*{},{},{},{},false)", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]), radiusCode, attenuationCode);
+    });
+    defs.insert({nd.type, nd});
+  }
+  {
+    NodeDefinition nd{NodeType::LightDirectional, "Light Directional", lightsColor};
+    const int colLoc = 0;
+    const int posLoc = 3;
+    const int intensityLoc = 6;
+    const int radiusLoc = 7;
+    const int stepsLoc = 8;
+    nd.initializeData({
+        1, 1, 1, // color
+        2, 2, 2, // position
+        10,      // intensity
+        0.1,     // radius
+        16,      // steps
+    });
+    nd.addInput("Color", PinType::Vec3);
+    nd.addInput("Intensity", PinType::Float);
+    nd.addInput("Radius", PinType::Float);
+    nd.addInput("Direction", PinType::Vec3);
     nd.addOutput("", PinType::Light);
     nd.setDrawContent([](Node* node) {
       node->drawBaseOutput(0);
@@ -778,7 +823,7 @@ std::map<NodeType, NodeDefinition> initDefinitions() {
       std::string intensityCode = node->pin0GenerateGlsl(1, uNFloat(index + intensityLoc));
       std::string radiusCode = node->pin0GenerateGlsl(2, uNFloat(index + radiusLoc));
       std::string posCode = node->pin0GenerateGlsl(3, uNVec3(index + posLoc));
-      return std::format("Light({},{}*{},{},{})", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]), radiusCode);
+      return std::format("Light({},{}*{},{},{},0.0,true)", posCode, intensityCode, colorCode, static_cast<int>(node->data[stepsLoc]), radiusCode);
     });
     defs.insert({nd.type, nd});
   }
@@ -840,6 +885,7 @@ const std::map<std::string, std::map<std::string, NodeType>> nodeListTree = {
         "Light",
         {
             {"Point", NodeType::LightPoint},
+            {"Directional", NodeType::LightDirectional},
         },
     },
     {

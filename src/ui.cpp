@@ -310,8 +310,8 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
         ImGui::SliderFloat("Scale", &viewport.camera.scale, 0.05, 2.0);
       }
       if (ImGui::CollapsingHeader("Renderer", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::SliderFloat("Downscale", &viewport.downscaleFactor, 0.05, 1.0);
-        ImGui::SliderInt("Iterations", &viewport.raymarchingSteps, 4, 128);
+        ImGui::SliderFloat("Downscale", &viewport.downscaleFactor, 0.0, 0.95);
+        ImGui::SliderInt("Iterations", &viewport.raymarchSteps, 4, 128);
         ImGui::SliderFloat("Ray start", &viewport.raymarchingClipStart, 0.0, 4.0);
         ImGui::SliderFloat("Ray end", &viewport.raymarchingClipEnd, 0.5, 256.0);
         ImGui::SliderFloat("Pixel radius", &viewport.raymarchingPixelRadius, 0.0001, 0.01, "%.4f");
@@ -319,8 +319,11 @@ void buildUi(GLFWwindow* window, ProjectData& pd, Viewport& viewport, Scene& sce
       }
       if (ImGui::CollapsingHeader("World", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::ColorEdit3("Ambient color", &viewport.ambientColor.x, ImGuiColorEditFlags_Float | ImGuiColorEditFlags_HDR);
+        ImGui::DragFloat("Ambient intensity", &viewport.ambientIntensity, 0.01, 0.0, 1e2);
         ImGui::DragFloat("Occlusion factor", &viewport.occlusionFactor, 0.01, 0.0, 1.0);
         ImGui::DragFloat("Occlusion radius", &viewport.occlusionRadius, 0.01, 0.0, 2.0);
+        ImGui::DragInt("Reflection raymarch steps", &viewport.reflRaymarchSteps, 0, 0, 64);
+        ImGui::DragFloat("Fog fade in", &viewport.fogFadeIn, 0.01, 0.0, 0.99);
       }
     }
     ImGui::End();

@@ -37,8 +37,8 @@ void Camera::displaceTarget(glm::vec2 delta) {
   voffset.x = -sy * voffset.z;
   voffset.z = cy * voffset.z;
 
-  target += hoffset * delta.x;
-  target -= voffset * delta.y;
+  target += 1.5f * hoffset * delta.x;
+  target -= 1.5f * voffset * delta.y;
 }
 
 void Camera::offsetYawPitch(float yawDelta, float pitchDelta) {

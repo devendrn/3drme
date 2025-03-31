@@ -8,10 +8,12 @@ uniform vec3 uCamTarget;
 uniform vec2 uJitterOffset;
 uniform vec2 uResolution;
 uniform float uTime;
-uniform int uRaymarchingSteps;
-uniform vec3 uRaymarchingParams;
+uniform int uRaymarchSteps;
+uniform int uReflRaymarchSteps;
+uniform vec3 uRaymarchParams;
 uniform vec2 uOcclusionParams;
 uniform vec3 uAmbientColor;
+uniform float uFogFadeIn;
 
 uniform float uN[1024];
 
@@ -102,6 +104,8 @@ struct Light {
   vec3 color;
   int shadowSteps;
   float radius;
+  float attenuation;
+  bool isDirectional;
 };
 
 mat3 rmat(vec3 r) {
@@ -187,7 +191,7 @@ vec3 applyTransform(vec3 p, mat4 t) {
 }
 
 vec3 renderSky(vec3 pos, float t) {
-  vec3 s = vec3(0.0);
+  vec3 s = uAmbientColor;
   // !sky_inline
   return s;
 }
@@ -279,10 +283,10 @@ float softShadow(vec3 ro, vec3 rd, int steps, float mint, float maxt, float w) {
 }
 
 vec3 rayMarch(vec3 ro, vec3 rd) {
-  const int MAX_ITERATIONS = uRaymarchingSteps;
-  const float TMIN = uRaymarchingParams.x;
-  const float TMAX = uRaymarchingParams.y;
-  const float PIXEL_RADIUS = uRaymarchingParams.z;
+  const int MAX_ITERATIONS = uRaymarchSteps;
+  const float TMIN = uRaymarchParams.x;
+  const float TMAX = uRaymarchParams.y;
+  const float PIXEL_RADIUS = uRaymarchParams.z;
 
   float candidateError = FLOAT_MAX;
   float previousRadius = 0.0;
@@ -323,27 +327,37 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
   float t = uTime;
   Light lights[] = Light[](
-    Light(vec3(0),vec3(0),0,0.0) // unused
+    Light(vec3(0),vec3(0),0,0.0,0.0,true) // unused
     // !lights_inline
   );
 
   vec3 lightGlow = vec3(0.0);
   for (int i = 1; i<lights.length(); i++) {
     Light l = lights[i];
-    vec3 ab = ro - l.position;
+    vec3 lpos = l.position;
+    if (l.isDirectional) {
+      lpos = normalize(lpos);
+      if (dist < TMAX && candidateError <= PIXEL_RADIUS) continue;
+      float g = max(dot(lpos, rd), 0.0);
+      g *= g;
+      lightGlow += l.color*g/(1.0+((1.0-g)/(0.0005 + 0.02*l.radius)));
+      continue;
+    }
+    vec3 ab = ro - lpos;
     float pd = length(ro-pos);
     float d = length(ab);
     if (pd < d || dot(ab, rd)>0.0) continue;
-    vec3 ac = (ro + rd*d) - l.position;
+    vec3 ac = (ro + rd*d) - lpos;
     vec3 abd = cross(ab, ac);
     float ar = dot(abd, abd)/d;
-    lightGlow += l.color/(0.001+30.0*ar*ar);
+    lightGlow += l.color/(0.001+(30.0*ar*ar*(0.5+l.attenuation)/(0.005+l.radius)));
   }
 
+  vec3 sky = renderSky(rd*TMAX, uTime);
+
   if (dist > TMAX || candidateError > PIXEL_RADIUS) {
-    vec3 col = renderSky(rd*TMAX, uTime);
-    col += lightGlow;
-    return col;
+    sky += lightGlow;
+    return sky;
   }
 
   vec3 col = s.color;
@@ -353,7 +367,12 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
   vec3 lighting = vec3(0.0);
   for (int i = 1; i<lights.length(); i++) {
     Light l = lights[i];
-    vec3 lightDir = normalize(pos - l.position);
+    vec3 lightDir;
+    if (l.isDirectional) {
+      lightDir = -normalize(l.position);
+    } else {
+      lightDir = normalize(pos - l.position);
+    }
     vec3 reflectDir = reflect(-lightDir, nrm);
 
     float diffuse =  max(dot(lightDir, nrm), 0.0);
@@ -361,9 +380,14 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
     float r1 = 1.0-r0;
     float specular = 2.0*pow(max(dot(rd, reflectDir), 0.0), 1.0/(r0*r0))*(r1*r1);
 
-    float dr = length(pos - l.position);
-    float shadow = softShadow(pos, -lightDir, l.shadowSteps, 0.2, 100.0, l.radius);
-    shadow /= (1.0+dr*dr);
+    float dr = 100.0;
+    if (!l.isDirectional) {
+        dr = length(pos - l.position);
+    }
+    float shadow = softShadow(pos, -lightDir, l.shadowSteps, 0.2, dr, l.radius);
+    if (!l.isDirectional) {
+      shadow /= (1.0+(dr*dr)*l.attenuation);
+    }
 
     lighting += (diffuse*col + specular)*l.color*shadow;
   }
@@ -377,11 +401,21 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 
   col = lighting;
 
+  if (s.roughness < 0.99) {
+    vec3 reflVdir = reflect(rd, nrm.xyz);
+    vec3 co = renderSky(reflVdir, t);
+    float r0 = 1.0-s.roughness;
+    float reflecOccl = softShadow(pos, reflVdir, uReflRaymarchSteps, 0.3, 30.0, (1.0-r0*r0)*0.7);
+    float fresnel = 0.06+0.94*cosr*cosr*cosr;
+    col += reflecOccl*fresnel*co*r0;
+  }
+
   // legacy
   float selfactor = 0.1 + 0.2*cosr+ 0.7*cosr*cosr*cosr;
   selfactor *= s.selected;
   col = mix(col, vec3(1.0, 0.7, 0.3), selfactor);
   col *= 1.0+selfactor;
+  col = mix(col, sky, smoothstep(uFogFadeIn,1.0,dist/TMAX));
 
   col += lightGlow;
 
