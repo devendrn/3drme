@@ -29,7 +29,8 @@ ProjectData::ProjectData() { nodeEditorContext = ax::NodeEditor::CreateEditor();
 ProjectData::~ProjectData() { ax::NodeEditor::DestroyEditor(nodeEditorContext); }
 
 void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor, const std::string& filepath) {
-  std::ofstream file(filepath, std::ios::binary);
+  std::string path = filepath.ends_with(".prj") ? filepath : filepath + ".prj"; 
+  std::ofstream file(path, std::ios::binary);
   if (!file.is_open()) {
     std::cerr << "Error: Could not open file for writing: " << filepath << std::endl;
     return;
@@ -42,10 +43,10 @@ void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& 
   oarchive(scene, viewport, graph);
 
   file.close();
-  std::cout << "[Project] Saved to " << filepath << std::endl;
+  std::cout << "[Project] Saved to " << path << std::endl;
 
   loadedFile = true;
-  loadedFilePath = filepath;
+  loadedFilePath = path;
 }
 
 void ProjectData::saveProjectFile(Scene& scene, Viewport& viewport, NodeEditor& sdfnodeeditor) {

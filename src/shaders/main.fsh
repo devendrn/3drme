@@ -425,16 +425,16 @@ vec3 rayMarch(vec3 ro, vec3 rd) {
 vec3 render(vec2 uv) {
   float scale = uProj.x;
   float fovVal = 1.0 + tan(uProj.y);
-  float dist = uProj.z;
+  float dist = -uProj.z;
 
   uv += uJitterOffset;
 
   uv *= scale;
 
-  vec3 ray_backplane = (vec3(uv, -dist) * uViewRot) - uCamTarget;
-  vec3 ray_frontplane = (vec3(fovVal*uv, -dist+0.5) * uViewRot) - uCamTarget;
+  vec3 ray_backplane = vec3(uv, dist) * uViewRot;
+  vec3 ray_frontplane = vec3(fovVal*uv, dist+0.5) * uViewRot;
 
-  vec3 ray_org = ray_backplane;
+  vec3 ray_org = ray_backplane - uCamTarget;
   vec3 ray_dir = normalize(ray_frontplane-ray_backplane);
 
   vec3 c = rayMarch(ray_org, ray_dir);

@@ -103,7 +103,7 @@ void Viewport::render() {
   shader.setUniformVec2("uResolution", glm::vec2(renderWidth, renderHeight));
   shader.setUniformVec2("uJitterOffset", jitterOffset);
   shader.setUniformVec2("uOcclusionParams", glm::vec2(occlusionFactor, occlusionRadius));
-  shader.setUniformVec3("uAmbientColor", ambientIntensity*ambientColor);
+  shader.setUniformVec3("uAmbientColor", ambientIntensity * ambientColor);
   shader.setUniformVec3("uProj", camera.getProjVec());
   shader.setUniformVec3("uCamTarget", camera.target);
   shader.setUniformVec3("uRaymarchParams", glm::vec3(this->raymarchingClipStart, this->raymarchingClipEnd, this->raymarchingPixelRadius));
@@ -202,9 +202,8 @@ void Viewport::bindKeys() {
   // TODO: must only do when cursor is inside window
   glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS) {
-      if (keyBinds.count(key)) {
+      if (keyBinds.contains(key))
         keyBinds[key]();
-      }
     }
   });
 }
@@ -240,6 +239,11 @@ void Viewport::captureImage(std::string& filePath) const {
   glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, buffer.data());
   taaFramebuffer.unbind();
 
+  if (!filePath.ends_with(".png"))
+    filePath += ".png";
+
   stbi_flip_vertically_on_write(1);
   stbi_write_png(filePath.c_str(), width, height, nrChannels, buffer.data(), stride);
+
+  std::cout << "[Viewport] Saved capture to " << filePath << std::endl;
 }
