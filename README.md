@@ -5,6 +5,8 @@ A playground for real-time raymarching experiments in C++. It's a simple editor 
 > [!WARNING]
 > This project was done as part of an academic presentation, so not intended for general use. 
 
+<img alt="Program screenshot" src="https://github.com/user-attachments/assets/2853fd6c-d27a-42a7-9d0c-5c75fbe41b92" />
+
 ### Built With
 
 - **Graphics & Windowing:** [GLFW](https://www.glfw.org/), [GLAD](https://glad.dav1d.de/)
